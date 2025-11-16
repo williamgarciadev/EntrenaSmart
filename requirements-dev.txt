@@ -1,0 +1,19 @@
+# EntrenaSmart - Dependencias de Desarrollo
+# Herramientas para desarrollo, testing y calidad de código
+
+# Formateadores y linters
+black>=23.10.0,<24.0.0              # Formateador de código
+isort>=5.12.0,<6.0.0                # Organizador de imports
+flake8>=6.1.0,<7.0.0                # Linter
+mypy>=1.6.0,<2.0.0                  # Verificador de tipos
+bandit>=1.7.5,<2.0.0                # Scanner de seguridad
+
+# Testing
+pytest>=7.4.0,<8.0.0                # Framework de testing
+pytest-asyncio>=0.21.0,<1.0.0       # Tests async
+pytest-cov>=4.1.0,<5.0.0            # Cobertura de código
+pytest-mock>=3.12.0,<4.0.0          # Mocking para tests
+
+# Type stubs
+types-pytz>=2023.3.0.0
+

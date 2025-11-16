@@ -1,0 +1,20 @@
+# EntrenaSmart - Dependencias de Producción
+# Bot de Telegram para Entrenadores Personales
+
+# Bot de Telegram
+python-telegram-bot>=20.0,<21.0
+
+# Base de datos
+SQLAlchemy>=2.0.0,<3.0.0
+
+# Programación de tareas
+APScheduler>=3.10.0,<4.0.0
+
+# Configuración y validación
+python-dotenv>=1.0.0
+pydantic>=2.0.0,<3.0.0
+pydantic-settings>=2.0.0,<3.0.0
+
+# Zona horaria
+pytz>=2023.3
+

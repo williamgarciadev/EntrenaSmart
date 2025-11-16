@@ -1,0 +1,47 @@
+# EntrenaSmart - Docker Compose
+# Configuración para deployment
+
+version: '3.8'
+
+services:
+  bot:
+    build: .
+    container_name: entrenasmart-bot
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    volumes:
+      # Persistencia de base de datos
+      - ./storage:/app/storage
+      # Persistencia de logs
+      - ./logs:/app/logs
+
+    environment:
+      - PYTHONUNBUFFERED=1
+
+    # Healthcheck
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # Límites de recursos
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+volumes:
+  storage:
+    driver: local
+  logs:
+    driver: local
+
