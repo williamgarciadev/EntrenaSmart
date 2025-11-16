@@ -1,27 +1,131 @@
 # EntrenaSmart - Docker Compose
-# Configuración para deployment
+# Configuración para deployment con Bot, API, Frontend y PostgreSQL
 
 version: '3.8'
 
 services:
+  # ============================================================================
+  # Base de Datos - PostgreSQL
+  # ============================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: entrenasmart-db
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: entrenasmart
+      POSTGRES_USER: entrenasmart
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-entrenasmart123}
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    ports:
+      - "5432:5432"
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U entrenasmart"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - entrenasmart-network
+
+  # ============================================================================
+  # API Backend - FastAPI
+  # ============================================================================
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: entrenasmart-api
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    environment:
+      - DATABASE_URL=postgresql://entrenasmart:${POSTGRES_PASSWORD:-entrenasmart123}@postgres:5432/entrenasmart
+      - PYTHONUNBUFFERED=1
+      - DEBUG=False
+
+    ports:
+      - "8000:8000"
+
+    volumes:
+      - ./storage:/app/storage
+      - ./logs:/app/logs
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    networks:
+      - entrenasmart-network
+
+  # ============================================================================
+  # Frontend - React/Vite
+  # ============================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: entrenasmart-frontend
+    restart: unless-stopped
+
+    environment:
+      - VITE_API_URL=http://api:8000
+
+    ports:
+      - "5173:80"
+
+    depends_on:
+      - api
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    networks:
+      - entrenasmart-network
+
+  # ============================================================================
+  # Bot de Telegram
+  # ============================================================================
   bot:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.bot
     container_name: entrenasmart-bot
     restart: unless-stopped
 
     env_file:
       - .env
 
+    environment:
+      - DATABASE_URL=postgresql://entrenasmart:${POSTGRES_PASSWORD:-entrenasmart123}@postgres:5432/entrenasmart
+      - PYTHONUNBUFFERED=1
+      - DEBUG=False
+
     volumes:
-      # Persistencia de base de datos
       - ./storage:/app/storage
-      # Persistencia de logs
       - ./logs:/app/logs
 
-    environment:
-      - PYTHONUNBUFFERED=1
+    depends_on:
+      postgres:
+        condition: service_healthy
 
-    # Healthcheck
     healthcheck:
       test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
       interval: 30s
@@ -29,19 +133,24 @@ services:
       retries: 3
       start_period: 40s
 
-    # Límites de recursos
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          cpus: '0.25'
-          memory: 256M
+    networks:
+      - entrenasmart-network
 
+# ============================================================================
+# Volúmenes persistentes
+# ============================================================================
 volumes:
+  postgres_data:
+    driver: local
   storage:
     driver: local
   logs:
     driver: local
+
+# ============================================================================
+# Red personalizada
+# ============================================================================
+networks:
+  entrenasmart-network:
+    driver: bridge
 

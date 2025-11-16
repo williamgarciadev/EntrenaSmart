@@ -18,3 +18,7 @@ pydantic-settings>=2.0.0,<3.0.0
 # Zona horaria
 pytz>=2023.3
 
+# API REST
+FastAPI>=0.104.0,<1.0.0
+uvicorn[standard]>=0.24.0,<1.0.0
+

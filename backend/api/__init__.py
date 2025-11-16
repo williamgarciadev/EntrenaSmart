@@ -1,0 +1,1 @@
+"""EntrenaSmart API FastAPI."""
