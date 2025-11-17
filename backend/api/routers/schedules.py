@@ -312,22 +312,43 @@ async def test_schedule(
 
         logger.info(f"Enviando mensaje de prueba: programación {schedule_id}")
 
-        # Obtener template (por ahora de MOCK_TEMPLATES)
-        from ..routers.templates import MOCK_TEMPLATES
-        template = MOCK_TEMPLATES.get(schedule.template_id)
+        # Obtener template de la BD
+        try:
+            from backend.src.services.template_service import TemplateService
+            with get_db_context() as db_template:
+                template_service = TemplateService(db_template)
+                template = template_service.get_template_by_id(schedule.template_id)
 
-        if not template:
-            logger.warning(f"Plantilla {schedule.template_id} no encontrada")
+            if not template:
+                logger.warning(f"Plantilla {schedule.template_id} no encontrada en BD")
+                # Fallback a MOCK_TEMPLATES para compatibilidad temporal
+                from ..routers.templates import MOCK_TEMPLATES
+                template_dict = MOCK_TEMPLATES.get(schedule.template_id)
+                if not template_dict:
+                    return {
+                        "success": False,
+                        "message": f"Plantilla {schedule.template_id} no encontrada",
+                        "schedule_id": schedule_id,
+                        "timestamp": datetime.now().isoformat(),
+                        "error": "TEMPLATE_NOT_FOUND"
+                    }
+                message_content = template_dict["content"]
+                template_name = template_dict["name"]
+            else:
+                message_content = template.content
+                template_name = template.name
+
+        except Exception as template_error:
+            logger.error(f"Error obteniendo plantilla: {template_error}", exc_info=True)
             return {
                 "success": False,
-                "message": f"Plantilla {schedule.template_id} no encontrada",
+                "message": f"Error obteniendo plantilla: {str(template_error)}",
                 "schedule_id": schedule_id,
                 "timestamp": datetime.now().isoformat(),
-                "error": "TEMPLATE_NOT_FOUND"
+                "error": "TEMPLATE_ERROR"
             }
 
         # Construir mensaje reemplazando variables
-        message_content = template["content"]
         message_content = message_content.replace("{alumno}", student.name)
         message_content = message_content.replace("{tipo_entrenamiento}", "Entrenamiento")
 
@@ -362,7 +383,7 @@ async def test_schedule(
                     "debug_info": {
                         "would_send_to": student.name,
                         "chat_id": student.chat_id,
-                        "template": template["name"],
+                        "template": template_name,
                         "message_preview": message_content
                     }
                 }
@@ -377,7 +398,7 @@ async def test_schedule(
                 "debug_info": {
                     "student": student.name,
                     "chat_id": student.chat_id,
-                    "template": template["name"]
+                    "template": template_name
                 }
             }
 

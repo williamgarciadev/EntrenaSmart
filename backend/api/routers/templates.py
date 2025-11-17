@@ -5,7 +5,6 @@ Endpoints para crear, actualizar y listar plantillas de mensajes
 con variables dinámicas para recordatorios automáticos.
 """
 from fastapi import APIRouter, HTTPException, status, Depends
-from datetime import datetime
 from ..schemas import (
     TemplateCreate,
     TemplateUpdate,
@@ -15,10 +14,18 @@ from ..schemas import (
 )
 from ..dependencies import get_current_trainer
 from ..logger import logger
+from backend.src.models.base import get_db_context
+from backend.src.services.template_service import TemplateService
+from backend.src.core.exceptions import (
+    ValidationError,
+    DuplicateRecordError,
+    RecordNotFoundError
+)
 
 router = APIRouter()
 
-# Simulación de datos en memoria para desarrollo
+# DEPRECATED: MOCK_TEMPLATES mantenido solo para compatibilidad temporal
+# TODO: Migrar todas las referencias a usar la base de datos
 MOCK_TEMPLATES = {
     1: {
         "id": 1,
@@ -49,8 +56,6 @@ MOCK_TEMPLATES = {
     },
 }
 
-_next_id = 4
-
 
 @router.get("", response_model=TemplateListResponse)
 async def list_templates(
@@ -58,22 +63,45 @@ async def list_templates(
     trainer: dict = Depends(get_current_trainer)
 ):
     """
-    Listar todas las plantillas de mensajes.
+    Listar todas las plantillas de mensajes desde la BD.
 
     Args:
         active_only: Si es True, solo retorna plantillas activas
     """
-    logger.info("Listando plantillas de mensajes")
+    logger.info(f"Listando plantillas desde BD (active_only={active_only})")
 
-    templates = list(MOCK_TEMPLATES.values())
+    try:
+        with get_db_context() as db:
+            service = TemplateService(db)
+            db_templates = service.list_all_templates(active_only=active_only)
 
-    if active_only:
-        templates = [t for t in templates if t["is_active"]]
+        # Convertir objetos ORM a response models
+        templates = [
+            TemplateResponse(
+                id=template.id,
+                name=template.name,
+                content=template.content,
+                variables=template.variables,
+                is_active=template.is_active,
+                created_at=template.created_at,
+                updated_at=template.updated_at
+            )
+            for template in db_templates
+        ]
 
-    return TemplateListResponse(
-        templates=[TemplateResponse(**t) for t in templates],
-        total=len(templates)
-    )
+        logger.info(f"✅ Obtenidas {len(templates)} plantillas de la BD")
+
+        return TemplateListResponse(
+            templates=templates,
+            total=len(templates)
+        )
+
+    except Exception as e:
+        logger.error(f"Error listando plantillas: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al listar plantillas"
+        )
 
 
 @router.get("/{template_id}", response_model=TemplateResponse)
@@ -82,21 +110,40 @@ async def get_template(
     trainer: dict = Depends(get_current_trainer)
 ):
     """
-    Obtener una plantilla específica.
+    Obtener una plantilla específica desde la BD.
 
     Args:
         template_id: ID de la plantilla
     """
-    if template_id not in MOCK_TEMPLATES:
+    try:
+        with get_db_context() as db:
+            service = TemplateService(db)
+            template = service.get_template_by_id_or_fail(template_id)
+
+        logger.info(f"Obtenida plantilla desde BD: {template.name}")
+
+        return TemplateResponse(
+            id=template.id,
+            name=template.name,
+            content=template.content,
+            variables=template.variables,
+            is_active=template.is_active,
+            created_at=template.created_at,
+            updated_at=template.updated_at
+        )
+
+    except RecordNotFoundError:
+        logger.warning(f"Plantilla {template_id} no encontrada en BD")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Plantilla {template_id} no encontrada"
         )
-
-    template = MOCK_TEMPLATES[template_id]
-    logger.info(f"Obteniendo plantilla: {template['name']}")
-
-    return TemplateResponse(**template)
+    except Exception as e:
+        logger.error(f"Error obteniendo plantilla {template_id}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al obtener plantilla"
+        )
 
 
 @router.post("", response_model=TemplateResponse, status_code=status.HTTP_201_CREATED)
@@ -105,44 +152,57 @@ async def create_template(
     trainer: dict = Depends(get_current_trainer)
 ):
     """
-    Crear una nueva plantilla de mensaje.
+    Crear una nueva plantilla de mensaje en la BD.
 
     Args:
         template: Datos de la plantilla a crear
     """
-    global _next_id
+    try:
+        # Extraer variables del contenido si no se especifican
+        variables = template.variables
+        if not variables:
+            import re
+            variables = list(set(re.findall(r'\{(\w+)\}', template.content)))
 
-    # Validar que el nombre sea único
-    for t in MOCK_TEMPLATES.values():
-        if t["name"].lower() == template.name.lower():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Ya existe una plantilla con el nombre '{template.name}'"
+        with get_db_context() as db:
+            service = TemplateService(db)
+            new_template = service.create_template(
+                name=template.name,
+                content=template.content,
+                variables=variables,
+                is_active=template.is_active
             )
 
-    # Extraer variables del contenido si no se especifican
-    variables = template.variables
-    if not variables:
-        import re
-        variables = list(set(re.findall(r'\{(\w+)\}', template.content)))
+        logger.info(f"✅ Plantilla creada en BD: {new_template.name}")
 
-    now = datetime.now().isoformat()
-    new_template = {
-        "id": _next_id,
-        "name": template.name,
-        "content": template.content,
-        "variables": variables,
-        "is_active": template.is_active,
-        "created_at": now,
-        "updated_at": now
-    }
+        return TemplateResponse(
+            id=new_template.id,
+            name=new_template.name,
+            content=new_template.content,
+            variables=new_template.variables,
+            is_active=new_template.is_active,
+            created_at=new_template.created_at,
+            updated_at=new_template.updated_at
+        )
 
-    MOCK_TEMPLATES[_next_id] = new_template
-    _next_id += 1
-
-    logger.info(f"Plantilla creada: {template.name}")
-
-    return TemplateResponse(**new_template)
+    except ValidationError as e:
+        logger.warning(f"Error de validación: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except DuplicateRecordError as e:
+        logger.warning(f"Plantilla duplicada: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"Error creando plantilla: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al crear plantilla"
+        )
 
 
 @router.put("/{template_id}", response_model=TemplateResponse)
@@ -152,35 +212,59 @@ async def update_template(
     trainer: dict = Depends(get_current_trainer)
 ):
     """
-    Actualizar una plantilla existente.
+    Actualizar una plantilla existente en la BD.
 
     Args:
         template_id: ID de la plantilla
         template_update: Datos a actualizar
     """
-    if template_id not in MOCK_TEMPLATES:
+    try:
+        with get_db_context() as db:
+            service = TemplateService(db)
+            template = service.update_template(
+                template_id=template_id,
+                name=template_update.name,
+                content=template_update.content,
+                variables=template_update.variables,
+                is_active=template_update.is_active
+            )
+
+        logger.info(f"✅ Plantilla actualizada en BD: {template.name}")
+
+        return TemplateResponse(
+            id=template.id,
+            name=template.name,
+            content=template.content,
+            variables=template.variables,
+            is_active=template.is_active,
+            created_at=template.created_at,
+            updated_at=template.updated_at
+        )
+
+    except RecordNotFoundError:
+        logger.warning(f"Plantilla {template_id} no encontrada en BD")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Plantilla {template_id} no encontrada"
         )
-
-    template = MOCK_TEMPLATES[template_id]
-
-    # Actualizar campos si se proporcionan
-    if template_update.name is not None:
-        template["name"] = template_update.name
-    if template_update.content is not None:
-        template["content"] = template_update.content
-    if template_update.variables is not None:
-        template["variables"] = template_update.variables
-    if template_update.is_active is not None:
-        template["is_active"] = template_update.is_active
-
-    template["updated_at"] = datetime.now().isoformat()
-
-    logger.info(f"Plantilla actualizada: {template['name']}")
-
-    return TemplateResponse(**template)
+    except ValidationError as e:
+        logger.warning(f"Error de validación: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except DuplicateRecordError as e:
+        logger.warning(f"Plantilla duplicada: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"Error actualizando plantilla: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al actualizar plantilla"
+        )
 
 
 @router.delete("/{template_id}", response_model=SuccessResponse)
@@ -189,23 +273,34 @@ async def delete_template(
     trainer: dict = Depends(get_current_trainer)
 ):
     """
-    Eliminar una plantilla.
+    Eliminar (desactivar) una plantilla en la BD.
 
     Args:
         template_id: ID de la plantilla a eliminar
     """
-    if template_id not in MOCK_TEMPLATES:
+    try:
+        with get_db_context() as db:
+            service = TemplateService(db)
+            template = service.delete_template(template_id)
+
+        logger.info(f"✅ Plantilla eliminada en BD: {template.name}")
+
+        return SuccessResponse(
+            message=f"Plantilla '{template.name}' eliminada exitosamente"
+        )
+
+    except RecordNotFoundError:
+        logger.warning(f"Plantilla {template_id} no encontrada en BD")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Plantilla {template_id} no encontrada"
         )
-
-    template = MOCK_TEMPLATES.pop(template_id)
-    logger.info(f"Plantilla eliminada: {template['name']}")
-
-    return SuccessResponse(
-        message=f"Plantilla '{template['name']}' eliminada exitosamente"
-    )
+    except Exception as e:
+        logger.error(f"Error eliminando plantilla: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al eliminar plantilla"
+        )
 
 
 @router.post("/{template_id}/preview", response_model=dict)
@@ -221,23 +316,34 @@ async def preview_template(
         template_id: ID de la plantilla
         variables_values: Dict con valores para reemplazar variables
     """
-    if template_id not in MOCK_TEMPLATES:
+    try:
+        with get_db_context() as db:
+            service = TemplateService(db)
+            template = service.get_template_by_id_or_fail(template_id)
+
+        content = template.content
+
+        # Reemplazar variables
+        for var, value in variables_values.items():
+            content = content.replace(f"{{{var}}}", str(value))
+
+        return {
+            "template_id": template.id,
+            "name": template.name,
+            "original_content": template.content,
+            "preview_content": content,
+            "variables_replaced": list(variables_values.keys())
+        }
+
+    except RecordNotFoundError:
+        logger.warning(f"Plantilla {template_id} no encontrada en BD")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Plantilla {template_id} no encontrada"
         )
-
-    template = MOCK_TEMPLATES[template_id]
-    content = template["content"]
-
-    # Reemplazar variables
-    for var, value in variables_values.items():
-        content = content.replace(f"{{{var}}}", str(value))
-
-    return {
-        "template_id": template_id,
-        "name": template["name"],
-        "original_content": template["content"],
-        "preview_content": content,
-        "variables_replaced": list(variables_values.keys())
-    }
+    except Exception as e:
+        logger.error(f"Error generando preview: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al generar preview"
+        )
