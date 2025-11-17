@@ -13,17 +13,10 @@ import {
   useTestSchedule,
 } from '@/hooks/useSchedules'
 import { useTemplates } from '@/hooks/useTemplates'
+import { useStudents } from '@/hooks/useStudents'
 import { useToast } from '@/components/Toast'
 import { Button } from '@/components/ui/Button'
 import type { MessageSchedule } from '@/lib/api'
-
-// Datos simulados para estudiantes
-const MOCK_STUDENTS = [
-  { id: 1, name: 'Juan García' },
-  { id: 2, name: 'María López' },
-  { id: 3, name: 'Carlos Rodríguez' },
-  { id: 4, name: 'Ana Martínez' },
-]
 
 const DAYS_OF_WEEK = [
   { id: 0, name: 'Lunes' },
@@ -50,6 +43,7 @@ export default function SchedulesPage() {
 
   const { data: schedulesData, isLoading, isError } = useSchedules()
   const { data: templatesData } = useTemplates()
+  const { data: studentsData } = useStudents()
   const createMutation = useCreateSchedule()
   const updateMutation = useUpdateSchedule()
   const deleteMutation = useDeleteSchedule()
@@ -179,7 +173,7 @@ export default function SchedulesPage() {
   }
 
   const getStudentName = (studentId: number) => {
-    const student = MOCK_STUDENTS.find((s) => s.id === studentId)
+    const student = studentsData?.students.find((s) => s.id === studentId)
     return student?.name || `Estudiante ${studentId}`
   }
 
@@ -346,7 +340,7 @@ export default function SchedulesPage() {
                       className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                     >
                       <option value={0}>Selecciona un estudiante</option>
-                      {MOCK_STUDENTS.map((student) => (
+                      {studentsData?.students.map((student) => (
                         <option key={student.id} value={student.id}>
                           {student.name}
                         </option>

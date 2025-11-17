@@ -15,36 +15,15 @@ from ..schemas import (
 )
 from ..dependencies import get_current_trainer
 from ..logger import logger
+from src.models.base import get_db_context
+from src.services.message_schedule_service import MessageScheduleService
+from src.core.exceptions import (
+    ValidationError,
+    DuplicateRecordError,
+    RecordNotFoundError
+)
 
 router = APIRouter()
-
-# Simulación de datos en memoria para desarrollo
-MOCK_SCHEDULES = {
-    1: {
-        "id": 1,
-        "template_id": 1,
-        "student_id": 1,
-        "hour": 9,
-        "minute": 0,
-        "days_of_week": [0, 1, 2, 3, 4],  # Lunes a viernes
-        "is_active": True,
-        "created_at": "2025-11-16T00:00:00",
-        "updated_at": "2025-11-16T00:00:00"
-    },
-    2: {
-        "id": 2,
-        "template_id": 2,
-        "student_id": 2,
-        "hour": 14,
-        "minute": 30,
-        "days_of_week": [1, 3, 5],  # Martes, jueves, sábado
-        "is_active": True,
-        "created_at": "2025-11-16T00:00:00",
-        "updated_at": "2025-11-16T00:00:00"
-    },
-}
-
-_next_id = 3
 
 
 @router.get("", response_model=MessageScheduleListResponse)
@@ -53,22 +32,47 @@ async def list_schedules(
     trainer: dict = Depends(get_current_trainer)
 ):
     """
-    Listar todas las programaciones de envío.
+    Listar todas las programaciones de envío desde la BD.
 
     Args:
         active_only: Si es True, solo retorna programaciones activas
     """
-    logger.info("Listando programaciones de envío")
+    logger.info(f"Listando programaciones desde BD (active_only={active_only})")
 
-    schedules = list(MOCK_SCHEDULES.values())
+    try:
+        with get_db_context() as db:
+            service = MessageScheduleService(db)
+            db_schedules = service.list_all_schedules(active_only=active_only)
 
-    if active_only:
-        schedules = [s for s in schedules if s["is_active"]]
+        # Convertir objetos ORM a response models
+        schedules = [
+            MessageScheduleResponse(
+                id=schedule.id,
+                template_id=schedule.template_id,
+                student_id=schedule.student_id,
+                hour=schedule.hour,
+                minute=schedule.minute,
+                days_of_week=schedule.days_of_week,
+                is_active=schedule.is_active,
+                created_at=schedule.created_at,
+                updated_at=schedule.updated_at
+            )
+            for schedule in db_schedules
+        ]
 
-    return MessageScheduleListResponse(
-        schedules=[MessageScheduleResponse(**s) for s in schedules],
-        total=len(schedules)
-    )
+        logger.info(f"✅ Obtenidas {len(schedules)} programaciones de la BD")
+
+        return MessageScheduleListResponse(
+            schedules=schedules,
+            total=len(schedules)
+        )
+
+    except Exception as e:
+        logger.error(f"Error listando programaciones: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al listar programaciones"
+        )
 
 
 @router.get("/{schedule_id}", response_model=MessageScheduleResponse)
@@ -77,21 +81,42 @@ async def get_schedule(
     trainer: dict = Depends(get_current_trainer)
 ):
     """
-    Obtener una programación específica.
+    Obtener una programación específica desde la BD.
 
     Args:
         schedule_id: ID de la programación
     """
-    if schedule_id not in MOCK_SCHEDULES:
+    try:
+        with get_db_context() as db:
+            service = MessageScheduleService(db)
+            schedule = service.get_schedule_by_id_or_fail(schedule_id)
+
+        logger.info(f"Obtenida programación desde BD: {schedule_id}")
+
+        return MessageScheduleResponse(
+            id=schedule.id,
+            template_id=schedule.template_id,
+            student_id=schedule.student_id,
+            hour=schedule.hour,
+            minute=schedule.minute,
+            days_of_week=schedule.days_of_week,
+            is_active=schedule.is_active,
+            created_at=schedule.created_at,
+            updated_at=schedule.updated_at
+        )
+
+    except RecordNotFoundError:
+        logger.warning(f"Programación {schedule_id} no encontrada en BD")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Programación {schedule_id} no encontrada"
         )
-
-    schedule = MOCK_SCHEDULES[schedule_id]
-    logger.info(f"Obteniendo programación: {schedule_id}")
-
-    return MessageScheduleResponse(**schedule)
+    except Exception as e:
+        logger.error(f"Error obteniendo programación {schedule_id}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al obtener programación"
+        )
 
 
 @router.post("", response_model=MessageScheduleResponse, status_code=status.HTTP_201_CREATED)
@@ -100,43 +125,55 @@ async def create_schedule(
     trainer: dict = Depends(get_current_trainer)
 ):
     """
-    Crear una nueva programación de envío.
+    Crear una nueva programación de envío en la BD.
 
     Args:
         schedule: Datos de la programación a crear
     """
-    global _next_id
-
-    # Validar que la programación sea única (mismo template, estudiante y horario)
-    for s in MOCK_SCHEDULES.values():
-        if (s["template_id"] == schedule.template_id and
-            s["student_id"] == schedule.student_id and
-            s["hour"] == schedule.hour and
-            s["minute"] == schedule.minute):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Ya existe una programación con estos mismos datos"
+    try:
+        with get_db_context() as db:
+            service = MessageScheduleService(db)
+            new_schedule = service.create_schedule(
+                template_id=schedule.template_id,
+                student_id=schedule.student_id,
+                hour=schedule.hour,
+                minute=schedule.minute,
+                days_of_week=schedule.days_of_week,
+                is_active=schedule.is_active
             )
 
-    now = datetime.now().isoformat()
-    new_schedule = {
-        "id": _next_id,
-        "template_id": schedule.template_id,
-        "student_id": schedule.student_id,
-        "hour": schedule.hour,
-        "minute": schedule.minute,
-        "days_of_week": schedule.days_of_week,
-        "is_active": schedule.is_active,
-        "created_at": now,
-        "updated_at": now
-    }
+        logger.info(f"✅ Programación creada en BD: {new_schedule.id}")
 
-    MOCK_SCHEDULES[_next_id] = new_schedule
-    _next_id += 1
+        return MessageScheduleResponse(
+            id=new_schedule.id,
+            template_id=new_schedule.template_id,
+            student_id=new_schedule.student_id,
+            hour=new_schedule.hour,
+            minute=new_schedule.minute,
+            days_of_week=new_schedule.days_of_week,
+            is_active=new_schedule.is_active,
+            created_at=new_schedule.created_at,
+            updated_at=new_schedule.updated_at
+        )
 
-    logger.info(f"Programación creada: {_next_id - 1}")
-
-    return MessageScheduleResponse(**new_schedule)
+    except ValidationError as e:
+        logger.warning(f"Error de validación: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except DuplicateRecordError as e:
+        logger.warning(f"Programación duplicada: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"Error creando programación: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al crear programación"
+        )
 
 
 @router.put("/{schedule_id}", response_model=MessageScheduleResponse)
@@ -146,39 +183,57 @@ async def update_schedule(
     trainer: dict = Depends(get_current_trainer)
 ):
     """
-    Actualizar una programación existente.
+    Actualizar una programación existente en la BD.
 
     Args:
         schedule_id: ID de la programación
         schedule_update: Datos a actualizar
     """
-    if schedule_id not in MOCK_SCHEDULES:
+    try:
+        with get_db_context() as db:
+            service = MessageScheduleService(db)
+            schedule = service.update_schedule(
+                schedule_id=schedule_id,
+                template_id=schedule_update.template_id,
+                student_id=schedule_update.student_id,
+                hour=schedule_update.hour,
+                minute=schedule_update.minute,
+                days_of_week=schedule_update.days_of_week,
+                is_active=schedule_update.is_active
+            )
+
+        logger.info(f"✅ Programación actualizada en BD: {schedule.id}")
+
+        return MessageScheduleResponse(
+            id=schedule.id,
+            template_id=schedule.template_id,
+            student_id=schedule.student_id,
+            hour=schedule.hour,
+            minute=schedule.minute,
+            days_of_week=schedule.days_of_week,
+            is_active=schedule.is_active,
+            created_at=schedule.created_at,
+            updated_at=schedule.updated_at
+        )
+
+    except RecordNotFoundError:
+        logger.warning(f"Programación {schedule_id} no encontrada en BD")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Programación {schedule_id} no encontrada"
         )
-
-    schedule = MOCK_SCHEDULES[schedule_id]
-
-    # Actualizar campos si se proporcionan
-    if schedule_update.template_id is not None:
-        schedule["template_id"] = schedule_update.template_id
-    if schedule_update.student_id is not None:
-        schedule["student_id"] = schedule_update.student_id
-    if schedule_update.hour is not None:
-        schedule["hour"] = schedule_update.hour
-    if schedule_update.minute is not None:
-        schedule["minute"] = schedule_update.minute
-    if schedule_update.days_of_week is not None:
-        schedule["days_of_week"] = schedule_update.days_of_week
-    if schedule_update.is_active is not None:
-        schedule["is_active"] = schedule_update.is_active
-
-    schedule["updated_at"] = datetime.now().isoformat()
-
-    logger.info(f"Programación actualizada: {schedule_id}")
-
-    return MessageScheduleResponse(**schedule)
+    except ValidationError as e:
+        logger.warning(f"Error de validación: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"Error actualizando programación: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al actualizar programación"
+        )
 
 
 @router.delete("/{schedule_id}", response_model=SuccessResponse)
@@ -187,23 +242,34 @@ async def delete_schedule(
     trainer: dict = Depends(get_current_trainer)
 ):
     """
-    Eliminar una programación.
+    Eliminar (desactivar) una programación en la BD.
 
     Args:
         schedule_id: ID de la programación a eliminar
     """
-    if schedule_id not in MOCK_SCHEDULES:
+    try:
+        with get_db_context() as db:
+            service = MessageScheduleService(db)
+            schedule = service.delete_schedule(schedule_id)
+
+        logger.info(f"✅ Programación eliminada en BD: {schedule_id}")
+
+        return SuccessResponse(
+            message=f"Programación {schedule_id} eliminada exitosamente"
+        )
+
+    except RecordNotFoundError:
+        logger.warning(f"Programación {schedule_id} no encontrada en BD")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Programación {schedule_id} no encontrada"
         )
-
-    schedule = MOCK_SCHEDULES.pop(schedule_id)
-    logger.info(f"Programación eliminada: {schedule_id}")
-
-    return SuccessResponse(
-        message=f"Programación {schedule_id} eliminada exitosamente"
-    )
+    except Exception as e:
+        logger.error(f"Error eliminando programación: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al eliminar programación"
+        )
 
 
 @router.post("/{schedule_id}/test", response_model=dict)
@@ -217,18 +283,30 @@ async def test_schedule(
     Args:
         schedule_id: ID de la programación
     """
-    if schedule_id not in MOCK_SCHEDULES:
+    try:
+        with get_db_context() as db:
+            service = MessageScheduleService(db)
+            schedule = service.get_schedule_by_id_or_fail(schedule_id)
+
+        logger.info(f"Enviando mensaje de prueba: programación {schedule_id}")
+
+        # TODO: Implementar envío real de mensaje de prueba
+        return {
+            "success": True,
+            "message": f"Mensaje de prueba enviado exitosamente",
+            "schedule_id": schedule_id,
+            "timestamp": datetime.now().isoformat()
+        }
+
+    except RecordNotFoundError:
+        logger.warning(f"Programación {schedule_id} no encontrada en BD")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Programación {schedule_id} no encontrada"
         )
-
-    schedule = MOCK_SCHEDULES[schedule_id]
-    logger.info(f"Enviando mensaje de prueba: programación {schedule_id}")
-
-    return {
-        "success": True,
-        "message": f"Mensaje de prueba enviado exitosamente",
-        "schedule_id": schedule_id,
-        "timestamp": datetime.now().isoformat()
-    }
+    except Exception as e:
+        logger.error(f"Error enviando mensaje de prueba: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al enviar mensaje de prueba"
+        )
