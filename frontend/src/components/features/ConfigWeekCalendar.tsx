@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useWeeklyConfig, useUpdateDayConfig } from '@/hooks/useTrainingConfig'
 import { Button } from '@/components/ui/Button'
+import type { TrainingDayConfig } from '@/lib/api'
 
 const TRAINING_TYPES = [
   'Pierna',
@@ -61,7 +62,7 @@ export function ConfigWeekCalendar() {
       <p className="text-gray-600">Configure los entrenamientos de cada día de la semana</p>
 
       <div className="space-y-3">
-        {weeklyConfig.configs.map((config) => (
+        {weeklyConfig.configs.map((config: TrainingDayConfig) => (
           <DayConfigRow
             key={config.weekday}
             config={config}

@@ -267,7 +267,7 @@ export default function SchedulesPage() {
                           {formatTime(schedule.hour, schedule.minute)} • {schedule.days_of_week.length} días
                         </p>
                         <div className="flex flex-wrap gap-1 mt-2">
-                          {schedule.days_of_week.map((dayId) => {
+                          {schedule.days_of_week.map((dayId: number) => {
                             const dayName = DAYS_OF_WEEK.find((d) => d.id === dayId)?.name
                             return (
                               <span
@@ -325,7 +325,7 @@ export default function SchedulesPage() {
                       className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                     >
                       <option value={0}>Selecciona una plantilla</option>
-                      {templatesData?.templates.map((template) => (
+                      {templatesData?.templates.map((template: { id: number; name: string }) => (
                         <option key={template.id} value={template.id}>
                           {template.name}
                         </option>

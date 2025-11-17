@@ -225,7 +225,7 @@ export default function TemplatesPage() {
                         </p>
                         {template.variables.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2">
-                            {template.variables.map((v) => (
+                            {template.variables.map((v: string) => (
                               <span
                                 key={v}
                                 className="inline-block bg-accent/20 text-accent px-2 py-1 rounded text-xs"
@@ -356,7 +356,7 @@ export default function TemplatesPage() {
                             PREVIEW:
                           </p>
                           <p className="text-sm text-foreground">
-                            {previewMutation.data.preview_content}
+                            {(previewMutation.data as { preview_content: string }).preview_content}
                           </p>
                         </div>
                       )}
