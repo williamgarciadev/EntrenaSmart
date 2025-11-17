@@ -1,9 +1,12 @@
 import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import {
   Users,
   Plus,
   Trash2,
   Edit,
+  AlertCircle,
 } from 'lucide-react'
 import {
   useStudents,
@@ -14,25 +17,37 @@ import {
 import { useToast } from '@/components/Toast'
 import { Button } from '@/components/ui/Button'
 import type { Student } from '@/lib/api'
+import { studentSchema, type StudentFormData } from '@/schemas/student'
 
 export default function StudentsPage() {
   const toast = useToast()
   const [isEditing, setIsEditing] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
-  const [formData, setFormData] = useState({
-    name: '',
-    telegram_username: '',
-    is_active: true,
-  })
 
   const { data: studentsData, isLoading, isError } = useStudents()
   const createMutation = useCreateStudent()
   const updateMutation = useUpdateStudent()
   const deleteMutation = useDeleteStudent()
 
+  // ✅ React Hook Form con validación Zod
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isValid },
+  } = useForm<StudentFormData>({
+    resolver: zodResolver(studentSchema),
+    mode: 'onChange', // Validar en tiempo real
+    defaultValues: {
+      name: '',
+      telegram_username: '',
+      is_active: true,
+    },
+  })
+
   const handleEdit = (student: Student) => {
     setEditingId(student.id)
-    setFormData({
+    reset({
       name: student.name,
       telegram_username: student.telegram_username || '',
       is_active: student.is_active,
@@ -40,33 +55,20 @@ export default function StudentsPage() {
     setIsEditing(true)
   }
 
-  const handleSave = async () => {
-    if (!formData.name.trim()) {
-      toast.addToast({
-        type: 'warning',
-        title: 'Nombre requerido',
-        description: 'Por favor ingresa el nombre del estudiante',
-      })
-      return
-    }
-
+  const onSubmit = async (data: StudentFormData) => {
     try {
       if (editingId) {
         await updateMutation.mutateAsync({
           studentId: editingId,
-          data: formData,
+          data,
         })
       } else {
-        await createMutation.mutateAsync(formData)
+        await createMutation.mutateAsync(data)
       }
 
       setIsEditing(false)
       setEditingId(null)
-      setFormData({
-        name: '',
-        telegram_username: '',
-        is_active: true,
-      })
+      reset()
 
       toast.addToast({
         type: 'success',
@@ -148,11 +150,7 @@ export default function StudentsPage() {
                     onClick={() => {
                       setIsEditing(true)
                       setEditingId(null)
-                      setFormData({
-                        name: '',
-                        telegram_username: '',
-                        is_active: true,
-                      })
+                      reset()
                     }}
                     className="bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2"
                   >
@@ -237,21 +235,28 @@ export default function StudentsPage() {
                   {editingId ? 'Editar Estudiante' : 'Nuevo Estudiante'}
                 </h3>
 
-                <div className="space-y-4">
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                   {/* Nombre */}
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-1">
-                      Nombre
+                      Nombre <span className="text-red-500">*</span>
                     </label>
                     <input
+                      {...register('name')}
                       type="text"
-                      value={formData.name}
-                      onChange={(e) =>
-                        setFormData((prev) => ({ ...prev, name: e.target.value }))
-                      }
                       placeholder="Ej: Juan García"
-                      className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                      className={`w-full px-3 py-2 border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 transition ${
+                        errors.name
+                          ? 'border-red-500 focus:ring-red-500'
+                          : 'border-border focus:ring-primary'
+                      }`}
                     />
+                    {errors.name && (
+                      <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                        <AlertCircle className="w-4 h-4" />
+                        {errors.name.message}
+                      </p>
+                    )}
                   </div>
 
                   {/* Usuario Telegram */}
@@ -260,28 +265,33 @@ export default function StudentsPage() {
                       Usuario Telegram (opcional)
                     </label>
                     <input
+                      {...register('telegram_username')}
                       type="text"
-                      value={formData.telegram_username}
-                      onChange={(e) =>
-                        setFormData((prev) => ({ ...prev, telegram_username: e.target.value }))
-                      }
                       placeholder="Ej: juangarcia"
-                      className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                      className={`w-full px-3 py-2 border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 transition ${
+                        errors.telegram_username
+                          ? 'border-red-500 focus:ring-red-500'
+                          : 'border-border focus:ring-primary'
+                      }`}
                     />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Sin la arroba (@). Se usa para vincular con Telegram.
-                    </p>
+                    {errors.telegram_username ? (
+                      <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                        <AlertCircle className="w-4 h-4" />
+                        {errors.telegram_username.message}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Sin la arroba (@). Se usa para vincular con Telegram.
+                      </p>
+                    )}
                   </div>
 
                   {/* Estado */}
                   <div>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
+                        {...register('is_active')}
                         type="checkbox"
-                        checked={formData.is_active}
-                        onChange={(e) =>
-                          setFormData((prev) => ({ ...prev, is_active: e.target.checked }))
-                        }
                         className="rounded border-border"
                       />
                       <span className="text-sm text-foreground">Activo</span>
@@ -291,23 +301,20 @@ export default function StudentsPage() {
                   {/* Botones */}
                   <div className="flex gap-2">
                     <Button
-                      onClick={handleSave}
+                      type="submit"
                       className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
-                      disabled={createMutation.isPending || updateMutation.isPending}
+                      disabled={!isValid || createMutation.isPending || updateMutation.isPending}
                     >
                       {createMutation.isPending || updateMutation.isPending
                         ? 'Guardando...'
                         : 'Guardar'}
                     </Button>
                     <Button
+                      type="button"
                       onClick={() => {
                         setIsEditing(false)
                         setEditingId(null)
-                        setFormData({
-                          name: '',
-                          telegram_username: '',
-                          is_active: true,
-                        })
+                        reset()
                       }}
                       variant="secondary"
                       className="flex-1"
@@ -315,7 +322,7 @@ export default function StudentsPage() {
                       Cancelar
                     </Button>
                   </div>
-                </div>
+                </form>
               </div>
             </div>
           )}
