@@ -3,6 +3,7 @@ Router de gestión de estudiantes.
 
 Endpoints para crear, actualizar, listar y eliminar estudiantes
 del sistema de entrenamientos.
+Persiste datos en PostgreSQL a través de StudentService.
 """
 from fastapi import APIRouter, HTTPException, status, Depends
 from datetime import datetime
@@ -15,50 +16,15 @@ from ..schemas import (
 )
 from ..dependencies import get_current_trainer
 from ..logger import logger
+from src.models.base import get_db_context
+from src.services.student_service import StudentService
+from src.core.exceptions import (
+    ValidationError,
+    DuplicateRecordError,
+    RecordNotFoundError
+)
 
 router = APIRouter()
-
-# Simulación de datos en memoria para desarrollo
-MOCK_STUDENTS = {
-    1: {
-        "id": 1,
-        "name": "Juan García",
-        "telegram_username": "juangarcia",
-        "chat_id": 123456789,
-        "is_active": True,
-        "created_at": "2025-11-16T00:00:00",
-        "updated_at": "2025-11-16T00:00:00"
-    },
-    2: {
-        "id": 2,
-        "name": "María López",
-        "telegram_username": "marialopez",
-        "chat_id": 987654321,
-        "is_active": True,
-        "created_at": "2025-11-16T00:00:00",
-        "updated_at": "2025-11-16T00:00:00"
-    },
-    3: {
-        "id": 3,
-        "name": "Carlos Rodríguez",
-        "telegram_username": "carlosrod",
-        "chat_id": 555666777,
-        "is_active": True,
-        "created_at": "2025-11-16T00:00:00",
-        "updated_at": "2025-11-16T00:00:00"
-    },
-    4: {
-        "id": 4,
-        "name": "Ana Martínez",
-        "telegram_username": "anamartinez",
-        "chat_id": None,
-        "is_active": True,
-        "created_at": "2025-11-16T00:00:00",
-        "updated_at": "2025-11-16T00:00:00"
-    },
-}
-
-_next_id = 5
 
 
 @router.get("", response_model=StudentListResponse)
@@ -67,22 +33,45 @@ async def list_students(
     trainer: dict = Depends(get_current_trainer)
 ):
     """
-    Listar todos los estudiantes.
+    Listar todos los estudiantes desde la BD.
 
     Args:
         active_only: Si es True, solo retorna estudiantes activos
     """
-    logger.info("Listando estudiantes")
+    logger.info(f"Listando estudiantes desde BD (active_only={active_only})")
 
-    students = list(MOCK_STUDENTS.values())
+    try:
+        with get_db_context() as db:
+            service = StudentService(db)
+            db_students = service.list_all_students(active_only=active_only)
 
-    if active_only:
-        students = [s for s in students if s["is_active"]]
+        # Convertir objetos ORM a response models
+        students = [
+            StudentResponse(
+                id=student.id,
+                name=student.name,
+                telegram_username=student.telegram_username,
+                chat_id=student.chat_id,
+                is_active=student.is_active,
+                created_at=student.created_at,
+                updated_at=student.updated_at
+            )
+            for student in db_students
+        ]
 
-    return StudentListResponse(
-        students=[StudentResponse(**s) for s in students],
-        total=len(students)
-    )
+        logger.info(f"✅ Obtenidos {len(students)} estudiantes de la BD")
+
+        return StudentListResponse(
+            students=students,
+            total=len(students)
+        )
+
+    except Exception as e:
+        logger.error(f"Error listando estudiantes: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al listar estudiantes"
+        )
 
 
 @router.get("/{student_id}", response_model=StudentResponse)
@@ -91,21 +80,40 @@ async def get_student(
     trainer: dict = Depends(get_current_trainer)
 ):
     """
-    Obtener un estudiante específico.
+    Obtener un estudiante específico desde la BD.
 
     Args:
         student_id: ID del estudiante
     """
-    if student_id not in MOCK_STUDENTS:
+    try:
+        with get_db_context() as db:
+            service = StudentService(db)
+            student = service.get_student_by_id_or_fail(student_id)
+
+        logger.info(f"Obtenido estudiante desde BD: {student.name}")
+
+        return StudentResponse(
+            id=student.id,
+            name=student.name,
+            telegram_username=student.telegram_username,
+            chat_id=student.chat_id,
+            is_active=student.is_active,
+            created_at=student.created_at,
+            updated_at=student.updated_at
+        )
+
+    except RecordNotFoundError:
+        logger.warning(f"Estudiante {student_id} no encontrado en BD")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Estudiante {student_id} no encontrado"
         )
-
-    student = MOCK_STUDENTS[student_id]
-    logger.info(f"Obteniendo estudiante: {student['name']}")
-
-    return StudentResponse(**student)
+    except Exception as e:
+        logger.error(f"Error obteniendo estudiante {student_id}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al obtener estudiante"
+        )
 
 
 @router.post("", response_model=StudentResponse, status_code=status.HTTP_201_CREATED)
@@ -114,47 +122,51 @@ async def create_student(
     trainer: dict = Depends(get_current_trainer)
 ):
     """
-    Crear un nuevo estudiante.
+    Crear un nuevo estudiante en la BD.
 
     Args:
         student: Datos del estudiante a crear
     """
-    global _next_id
-
-    # Validar que el nombre sea único
-    for s in MOCK_STUDENTS.values():
-        if s["name"].lower() == student.name.lower():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Ya existe un estudiante con el nombre '{student.name}'"
+    try:
+        with get_db_context() as db:
+            service = StudentService(db)
+            new_student = service.register_student(
+                name=student.name,
+                telegram_username=student.telegram_username,
+                chat_id=None  # Se asigna cuando el alumno hace /start
             )
+            # Auto-commit al salir del contexto
 
-    # Validar que telegram_username sea único si se proporciona
-    if student.telegram_username:
-        for s in MOCK_STUDENTS.values():
-            if s["telegram_username"] and s["telegram_username"].lower() == student.telegram_username.lower():
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Ya existe un estudiante con el usuario Telegram '{student.telegram_username}'"
-                )
+        logger.info(f"✅ Estudiante creado en BD: {new_student.name}")
 
-    now = datetime.now().isoformat()
-    new_student = {
-        "id": _next_id,
-        "name": student.name,
-        "telegram_username": student.telegram_username,
-        "chat_id": None,
-        "is_active": student.is_active,
-        "created_at": now,
-        "updated_at": now
-    }
+        return StudentResponse(
+            id=new_student.id,
+            name=new_student.name,
+            telegram_username=new_student.telegram_username,
+            chat_id=new_student.chat_id,
+            is_active=new_student.is_active,
+            created_at=new_student.created_at,
+            updated_at=new_student.updated_at
+        )
 
-    MOCK_STUDENTS[_next_id] = new_student
-    _next_id += 1
-
-    logger.info(f"Estudiante creado: {student.name}")
-
-    return StudentResponse(**new_student)
+    except ValidationError as e:
+        logger.warning(f"Error de validación: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except DuplicateRecordError as e:
+        logger.warning(f"Estudiante duplicado: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"Error creando estudiante: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al crear estudiante"
+        )
 
 
 @router.put("/{student_id}", response_model=StudentResponse)
@@ -164,51 +176,75 @@ async def update_student(
     trainer: dict = Depends(get_current_trainer)
 ):
     """
-    Actualizar un estudiante existente.
+    Actualizar un estudiante existente en la BD.
 
     Args:
         student_id: ID del estudiante
         student_update: Datos a actualizar
     """
-    if student_id not in MOCK_STUDENTS:
+    try:
+        with get_db_context() as db:
+            service = StudentService(db)
+
+            # Verificar que el estudiante existe
+            student = service.get_student_by_id_or_fail(student_id)
+
+            # Actualizar nombre si se proporciona
+            if student_update.name:
+                student = service.update_student_name(student_id, student_update.name)
+
+            # Actualizar telegram_username si se proporciona
+            if student_update.telegram_username is not None:
+                student.telegram_username = student_update.telegram_username
+
+            # Actualizar is_active
+            if student_update.is_active is not None:
+                if student_update.is_active != student.is_active:
+                    if student_update.is_active:
+                        student = service.activate_student(student_id)
+                    else:
+                        student = service.deactivate_student(student_id)
+
+            db.commit()
+            db.refresh(student)
+            # Auto-commit al salir del contexto
+
+        logger.info(f"✅ Estudiante actualizado en BD: {student.name}")
+
+        return StudentResponse(
+            id=student.id,
+            name=student.name,
+            telegram_username=student.telegram_username,
+            chat_id=student.chat_id,
+            is_active=student.is_active,
+            created_at=student.created_at,
+            updated_at=student.updated_at
+        )
+
+    except RecordNotFoundError:
+        logger.warning(f"Estudiante {student_id} no encontrado en BD")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Estudiante {student_id} no encontrado"
         )
-
-    student = MOCK_STUDENTS[student_id]
-
-    # Actualizar campos si se proporcionan
-    if student_update.name is not None:
-        # Validar que el nuevo nombre sea único
-        for s in MOCK_STUDENTS.values():
-            if s["id"] != student_id and s["name"].lower() == student_update.name.lower():
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Ya existe un estudiante con el nombre '{student_update.name}'"
-                )
-        student["name"] = student_update.name
-
-    if student_update.telegram_username is not None:
-        # Validar que el nuevo username sea único
-        if student_update.telegram_username:
-            for s in MOCK_STUDENTS.values():
-                if s["id"] != student_id and s["telegram_username"] and \
-                   s["telegram_username"].lower() == student_update.telegram_username.lower():
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Ya existe un estudiante con el usuario Telegram '{student_update.telegram_username}'"
-                    )
-        student["telegram_username"] = student_update.telegram_username
-
-    if student_update.is_active is not None:
-        student["is_active"] = student_update.is_active
-
-    student["updated_at"] = datetime.now().isoformat()
-
-    logger.info(f"Estudiante actualizado: {student['name']}")
-
-    return StudentResponse(**student)
+    except ValidationError as e:
+        logger.warning(f"Error de validación: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except DuplicateRecordError as e:
+        logger.warning(f"Estudiante duplicado: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"Error actualizando estudiante: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al actualizar estudiante"
+        )
 
 
 @router.delete("/{student_id}", response_model=SuccessResponse)
@@ -217,23 +253,32 @@ async def delete_student(
     trainer: dict = Depends(get_current_trainer)
 ):
     """
-    Eliminar un estudiante (soft delete - inactiva).
+    Eliminar un estudiante de la BD (soft delete - inactiva).
 
     Args:
         student_id: ID del estudiante a eliminar
     """
-    if student_id not in MOCK_STUDENTS:
+    try:
+        with get_db_context() as db:
+            service = StudentService(db)
+            student = service.deactivate_student(student_id)
+            # Auto-commit al salir del contexto
+
+        logger.info(f"✅ Estudiante inactivado en BD: {student.name}")
+
+        return SuccessResponse(
+            message=f"Estudiante '{student.name}' eliminado exitosamente"
+        )
+
+    except RecordNotFoundError:
+        logger.warning(f"Estudiante {student_id} no encontrado en BD")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Estudiante {student_id} no encontrado"
         )
-
-    student = MOCK_STUDENTS[student_id]
-    student["is_active"] = False
-    student["updated_at"] = datetime.now().isoformat()
-
-    logger.info(f"Estudiante inactivado: {student['name']}")
-
-    return SuccessResponse(
-        message=f"Estudiante '{student['name']}' eliminado exitosamente"
-    )
+    except Exception as e:
+        logger.error(f"Error eliminando estudiante: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al eliminar estudiante"
+        )
