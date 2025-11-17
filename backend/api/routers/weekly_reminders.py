@@ -262,10 +262,19 @@ async def send_test_message(
                 detail="No hay mensaje configurado o el recordatorio está desactivado"
             )
 
+        # Crear teclado inline con botón para configurar semana
+        from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+
+        keyboard = [
+            [InlineKeyboardButton("📅 Configurar mi semana", callback_data="config_weekly_training")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
         # Enviar al entrenador (trainer_telegram_id)
         await bot.send_message(
             chat_id=settings.trainer_telegram_id,
-            text=f"🧪 MENSAJE DE PRUEBA:\n\n{message}"
+            text=f"🧪 MENSAJE DE PRUEBA:\n\n{message}",
+            reply_markup=reply_markup
         )
 
         logger.info(f"✅ [API] Mensaje de prueba enviado al entrenador ({settings.trainer_telegram_id})")

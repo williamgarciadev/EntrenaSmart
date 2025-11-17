@@ -21,14 +21,16 @@ export function useUpdateWeeklyReminder() {
   })
 }
 
-// Get active students (from students API)
+// Get active students
 export function useActiveStudents() {
   return useQuery({
     queryKey: ['weekly-reminder', 'active-students'],
     queryFn: async () => {
-      // Since there's no specific endpoint, we can return a placeholder
-      // or use the students API
-      return { total: 0, students: [] }
+      const response = await fetch('http://localhost:8000/api/weekly-reminders/active-students', {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      })
+      if (!response.ok) throw new Error('Failed to fetch active students')
+      return response.json()
     },
   })
 }

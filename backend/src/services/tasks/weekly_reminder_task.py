@@ -85,6 +85,14 @@ class WeeklyReminderTask:
 
             logger.info(f"✅ [WEEKLY_REMINDER] Bot y event loop obtenidos correctamente")
 
+            # Crear teclado inline con botón para configurar semana
+            from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+
+            keyboard = [
+                [InlineKeyboardButton("📅 Configurar mi semana", callback_data="config_weekly_training")]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+
             # Enviar mensajes a todos los estudiantes
             success_count = 0
             error_count = 0
@@ -98,7 +106,8 @@ class WeeklyReminderTask:
                         bot.send_message(
                             chat_id=student.chat_id,
                             text=message,
-                            parse_mode=None  # Enviar como texto plano
+                            parse_mode=None,  # Enviar como texto plano
+                            reply_markup=reply_markup
                         ),
                         event_loop
                     )

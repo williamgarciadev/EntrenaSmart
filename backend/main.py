@@ -43,6 +43,7 @@ from backend.src.handlers.student_handlers import (
     handle_feedback_completion
 )
 from backend.src.handlers.student_schedule_handler import mi_semana_command
+from backend.src.handlers.weekly_reminder_callback_handler import handle_weekly_reminder_callback
 
 
 # Tracking de conflictos para detectar loops de reintentos
@@ -279,6 +280,14 @@ def main() -> None:
         CallbackQueryHandler(
             commands_menu_handler,
             pattern=r"^cmd_"
+        )
+    )
+
+    # Callback para recordatorio semanal
+    application.add_handler(
+        CallbackQueryHandler(
+            handle_weekly_reminder_callback,
+            pattern=r"^config_weekly_training$"
         )
     )
 
