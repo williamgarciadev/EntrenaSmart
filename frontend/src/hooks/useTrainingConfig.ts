@@ -1,8 +1,8 @@
-"""
-Hook customizado para trabajar con la configuración de entrenamientos.
-
-Usa TanStack Query para manejo de estado del servidor.
-"""
+/**
+ * Hook customizado para trabajar con la configuración de entrenamientos.
+ *
+ * Usa TanStack Query para manejo de estado del servidor.
+ */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { trainingConfigAPI, type TrainingDayConfig, type WeeklyConfig } from '@/lib/api'
 

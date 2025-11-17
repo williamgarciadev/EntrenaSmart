@@ -13,7 +13,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from backend.api.routers import auth, training_config
+from backend.api.routers import auth, training_config, students
 from backend.api.middleware import verify_auth_header
 
 # Configuración CORS
@@ -72,6 +72,7 @@ async def health_check():
 
 # Incluir routers
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
+app.include_router(students.router, prefix="/api/students", tags=["Students"])
 app.include_router(training_config.router, prefix="/api/training-config", tags=["Training Config"])
 
 

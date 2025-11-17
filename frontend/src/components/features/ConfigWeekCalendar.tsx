@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useWeeklyConfig, useUpdateDayConfig } from '@/hooks/useTrainingConfig'
 import { Button } from '@/components/ui/Button'
+import { CardSkeleton } from '@/components/ui/Skeleton'
 
 const TRAINING_TYPES = [
   'Pierna',
@@ -48,7 +49,17 @@ export function ConfigWeekCalendar() {
   }
 
   if (isLoading) {
-    return <div className="text-center py-8">Cargando configuración...</div>
+    return (
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold">Configuración Semanal</h2>
+        <p className="text-gray-600">Cargando configuración...</p>
+        <div className="space-y-3">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <CardSkeleton key={`skeleton-${i}`} />
+          ))}
+        </div>
+      </div>
+    )
   }
 
   if (!weeklyConfig) {

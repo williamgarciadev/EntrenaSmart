@@ -16,6 +16,7 @@ import {
 } from '@/hooks/useStudents'
 import { useToast } from '@/components/Toast'
 import { Button } from '@/components/ui/Button'
+import { TableSkeleton } from '@/components/ui/Skeleton'
 import type { Student } from '@/lib/api'
 import { studentSchema, type StudentFormData } from '@/schemas/student'
 
@@ -107,12 +108,31 @@ export default function StudentsPage() {
     }
   }
 
-  if (isLoading)
+  if (isLoading) {
     return (
-      <div className="p-4">
-        <p>Cargando estudiantes...</p>
+      <div className="min-h-screen bg-background">
+        <div className="max-w-6xl mx-auto p-6">
+          {/* Header Skeleton */}
+          <div className="mb-8 flex items-start gap-4">
+            <div className="p-3 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg text-white shadow-lg">
+              <Users className="w-8 h-8" />
+            </div>
+            <div className="flex-1">
+              <h1 className="text-4xl font-bold text-foreground mb-2">Gestión de Estudiantes</h1>
+              <p className="text-muted-foreground">
+                Cargando datos...
+              </p>
+            </div>
+          </div>
+
+          {/* Table Skeleton */}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <TableSkeleton rows={5} columns={4} />
+          </div>
+        </div>
       </div>
     )
+  }
 
   if (isError)
     return (
