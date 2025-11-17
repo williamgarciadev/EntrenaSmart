@@ -6,7 +6,7 @@ Proporciona templates y funciones de formateo para mensajes
 del bot de Telegram.
 """
 from typing import List
-from src.core.constants import TRAINER_COMMANDS, STUDENT_COMMANDS
+from backend.src.core.constants import TRAINER_COMMANDS, STUDENT_COMMANDS
 
 
 class Messages:

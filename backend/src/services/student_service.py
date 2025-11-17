@@ -9,14 +9,14 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
-from src.models.student import Student
-from src.repositories.student_repository import StudentRepository
-from src.core.exceptions import (
+from backend.src.models.student import Student
+from backend.src.repositories.student_repository import StudentRepository
+from backend.src.core.exceptions import (
     ValidationError,
     StudentNotActiveError,
     RecordNotFoundError
 )
-from src.core.constants import MAX_STUDENT_NAME_LENGTH
+from backend.src.core.constants import MAX_STUDENT_NAME_LENGTH
 
 
 class StudentService:

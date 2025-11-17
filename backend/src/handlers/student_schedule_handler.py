@@ -10,11 +10,11 @@ de tipo de entrenamiento y ubicación.
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from src.models.base import get_db
-from src.models.student import Student
-from src.services.training_service import TrainingService
-from src.services.config_training_service import ConfigTrainingService
-from src.utils.logger import logger
+from backend.src.models.base import get_db
+from backend.src.models.student import Student
+from backend.src.services.training_service import TrainingService
+from backend.src.services.config_training_service import ConfigTrainingService
+from backend.src.utils.logger import logger
 
 
 async def mi_semana_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

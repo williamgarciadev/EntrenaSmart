@@ -11,7 +11,7 @@ from datetime import datetime
 from sqlalchemy import ForeignKey, String, Integer, Time, CheckConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.models.base import Base
+from backend.src.models.base import Base
 
 
 class Training(Base):

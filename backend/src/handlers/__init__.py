@@ -9,7 +9,7 @@ Handlers disponibles:
 - trainer_handlers: Comandos del entrenador
 - student_handlers: Comandos y respuestas de alumnos
 """
-from src.handlers.trainer_handlers import (
+from backend.src.handlers.trainer_handlers import (
     start_command,
     help_command,
     listar_alumnos_command,
@@ -17,11 +17,11 @@ from src.handlers.trainer_handlers import (
     is_trainer
 )
 
-from src.handlers.registration_handler import build_registration_conv_handler
-from src.handlers.training_handler import build_training_conv_handler
-from src.handlers.edit_training_handler import build_edit_training_conv_handler
+from backend.src.handlers.registration_handler import build_registration_conv_handler
+from backend.src.handlers.training_handler import build_training_conv_handler
+from backend.src.handlers.edit_training_handler import build_edit_training_conv_handler
 
-from src.handlers.student_handlers import (
+from backend.src.handlers.student_handlers import (
     mis_sesiones_command,
     handle_feedback_intensity,
     handle_feedback_text,

@@ -6,8 +6,8 @@ Repositorio de Feedback
 from typing import List, Optional
 from sqlalchemy.orm import Session
 
-from src.models.feedback import Feedback
-from src.repositories.base_repository import BaseRepository
+from backend.src.models.feedback import Feedback
+from backend.src.repositories.base_repository import BaseRepository
 
 
 class FeedbackRepository(BaseRepository[Feedback]):

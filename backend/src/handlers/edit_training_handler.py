@@ -38,16 +38,16 @@ from telegram.ext import (
     filters
 )
 
-from src.models.base import get_db
-from src.services.student_service import StudentService
-from src.services.training_service import TrainingService
-from src.services.config_training_service import ConfigTrainingService
-from src.utils.fuzzy_search import search_students
-from src.utils.conversation_state import EditTrainingState, save_state_to_context_simple, load_state_from_context_simple, clear_state_simple
-from src.utils.menu_builder import build_yesno_menu
-from src.utils.validation_helpers import validate_time_format, get_time_validation_tips
-from src.utils.logger import logger
-from src.core.constants import SESSION_TYPES
+from backend.src.models.base import get_db
+from backend.src.services.student_service import StudentService
+from backend.src.services.training_service import TrainingService
+from backend.src.services.config_training_service import ConfigTrainingService
+from backend.src.utils.fuzzy_search import search_students
+from backend.src.utils.conversation_state import EditTrainingState, save_state_to_context_simple, load_state_from_context_simple, clear_state_simple
+from backend.src.utils.menu_builder import build_yesno_menu
+from backend.src.utils.validation_helpers import validate_time_format, get_time_validation_tips
+from backend.src.utils.logger import logger
+from backend.src.core.constants import SESSION_TYPES
 
 # Estados del ConversationHandler
 SELECT_STUDENT, CONFIRM_STUDENT, SELECT_TRAINING, EDIT_OPTIONS, ENTER_TIME, SELECT_SESSION_TYPE, CONFIRM_DELETE = range(1, 8)

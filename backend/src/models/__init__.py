@@ -9,11 +9,11 @@ Este módulo contiene los modelos de base de datos:
 - TrainingDayConfig: Configuración semanal de entrenamientos
 - Feedback: Modelo de feedback post-entrenamiento
 """
-from src.models.base import Base, engine, SessionLocal, init_db, get_db
-from src.models.student import Student
-from src.models.training import Training
-from src.models.training_day_config import TrainingDayConfig
-from src.models.feedback import Feedback
+from backend.src.models.base import Base, engine, SessionLocal, init_db, get_db
+from backend.src.models.student import Student
+from backend.src.models.training import Training
+from backend.src.models.training_day_config import TrainingDayConfig
+from backend.src.models.feedback import Feedback
 
 __all__ = [
     "Base",

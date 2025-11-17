@@ -15,13 +15,13 @@ from telegram.ext import (
     filters
 )
 
-from src.core.config import settings
-from src.models.base import init_db, get_db
-from src.services.scheduler_service import SchedulerService
-from src.utils.logger import logger
+from backend.src.core.config import settings
+from backend.src.models.base import init_db, get_db
+from backend.src.services.scheduler_service import SchedulerService
+from backend.src.utils.logger import logger
 
 # Importar handlers
-from src.handlers.trainer_handlers import (
+from backend.src.handlers.trainer_handlers import (
     start_command,
     help_command,
     listar_alumnos_command,
@@ -33,16 +33,16 @@ from src.handlers.trainer_handlers import (
     handle_training_another_day,
     handle_training_final_confirm
 )
-from src.handlers.registration_handler import build_registration_conv_handler
-from src.handlers.training_handler import build_training_conv_handler
-from src.handlers.edit_training_handler import build_edit_training_conv_handler
-from src.handlers.config_training_handler import config_training_handler
-from src.handlers.student_handlers import (
+from backend.src.handlers.registration_handler import build_registration_conv_handler
+from backend.src.handlers.training_handler import build_training_conv_handler
+from backend.src.handlers.edit_training_handler import build_edit_training_conv_handler
+from backend.src.handlers.config_training_handler import config_training_handler
+from backend.src.handlers.student_handlers import (
     mis_sesiones_command,
     handle_feedback_intensity,
     handle_feedback_completion
 )
-from src.handlers.student_schedule_handler import mi_semana_command
+from backend.src.handlers.student_schedule_handler import mi_semana_command
 
 
 # Tracking de conflictos para detectar loops de reintentos

@@ -12,10 +12,10 @@ Repositorios disponibles:
 - TrainingRepository: Operaciones específicas de entrenamientos
 - FeedbackRepository: Operaciones específicas de feedback
 """
-from src.repositories.base_repository import BaseRepository
-from src.repositories.student_repository import StudentRepository
-from src.repositories.training_repository import TrainingRepository
-from src.repositories.feedback_repository import FeedbackRepository
+from backend.src.repositories.base_repository import BaseRepository
+from backend.src.repositories.student_repository import StudentRepository
+from backend.src.repositories.training_repository import TrainingRepository
+from backend.src.repositories.feedback_repository import FeedbackRepository
 
 __all__ = [
     "BaseRepository",

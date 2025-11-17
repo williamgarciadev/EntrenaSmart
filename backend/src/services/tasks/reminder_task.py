@@ -20,8 +20,8 @@ import concurrent.futures
 from datetime import datetime
 from typing import Optional
 
-from src.utils.logger import logger
-from src.utils.messages import Messages
+from backend.src.utils.logger import logger
+from backend.src.utils.messages import Messages
 
 
 class ReminderTask:

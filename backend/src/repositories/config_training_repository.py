@@ -8,8 +8,8 @@ Maneja operaciones CRUD para TrainingDayConfig (configuración semanal).
 from typing import List, Optional
 from sqlalchemy.orm import Session
 
-from src.models.training_day_config import TrainingDayConfig
-from src.repositories.base_repository import BaseRepository
+from backend.src.models.training_day_config import TrainingDayConfig
+from backend.src.repositories.base_repository import BaseRepository
 
 
 class ConfigTrainingRepository(BaseRepository[TrainingDayConfig]):

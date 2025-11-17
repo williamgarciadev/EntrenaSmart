@@ -8,11 +8,11 @@ de los alumnos.
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from src.models.base import get_db
-from src.services.student_service import StudentService
-from src.services.training_service import TrainingService
-from src.utils.messages import Messages
-from src.utils.logger import logger
+from backend.src.models.base import get_db
+from backend.src.services.student_service import StudentService
+from backend.src.services.training_service import TrainingService
+from backend.src.utils.messages import Messages
+from backend.src.utils.logger import logger
 
 
 async def mis_sesiones_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

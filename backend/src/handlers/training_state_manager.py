@@ -8,14 +8,14 @@ de forma segura y type-safe.
 """
 from telegram.ext import ContextTypes
 
-from src.utils.conversation_state import (
+from backend.src.utils.conversation_state import (
     ConfigTrainingState,
     save_state_to_context_simple,
     load_state_from_context_simple,
     clear_state_simple
 )
-from src.core.exceptions import StateNotFoundError
-from src.utils.logger import logger
+from backend.src.core.exceptions import StateNotFoundError
+from backend.src.utils.logger import logger
 
 
 class TrainingStateManager:

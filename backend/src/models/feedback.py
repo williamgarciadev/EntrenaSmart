@@ -10,7 +10,7 @@ from typing import Optional
 from sqlalchemy import ForeignKey, String, Integer, CheckConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.models.base import Base
+from backend.src.models.base import Base
 
 
 class Feedback(Base):

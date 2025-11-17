@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from src.core.config import settings
+from backend.src.core.config import settings
 
 
 def setup_logger(

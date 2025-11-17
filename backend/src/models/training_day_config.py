@@ -12,7 +12,7 @@ from datetime import datetime
 from sqlalchemy import String, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 
-from src.models.base import Base
+from backend.src.models.base import Base
 
 
 class TrainingDayConfig(Base):

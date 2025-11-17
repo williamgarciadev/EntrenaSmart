@@ -9,10 +9,10 @@ qué tipo de entrenamiento y ubicación para cada día.
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 
-from src.models.training_day_config import TrainingDayConfig
-from src.repositories.config_training_repository import ConfigTrainingRepository
-from src.core.exceptions import ValidationError, RecordNotFoundError
-from src.utils.logger import logger
+from backend.src.models.training_day_config import TrainingDayConfig
+from backend.src.repositories.config_training_repository import ConfigTrainingRepository
+from backend.src.core.exceptions import ValidationError, RecordNotFoundError
+from backend.src.utils.logger import logger
 
 
 class ConfigTrainingService:

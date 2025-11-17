@@ -25,12 +25,12 @@ from telegram.ext import (
     filters
 )
 
-from src.models.base import get_db
-from src.services.student_service import StudentService
-from src.core.exceptions import DuplicateRecordError, ValidationError
-from src.utils.conversation_state import RegistrationState, save_state_to_context_simple, load_state_from_context_simple, clear_state_simple
-from src.utils.menu_builder import build_yesno_menu
-from src.utils.logger import logger
+from backend.src.models.base import get_db
+from backend.src.services.student_service import StudentService
+from backend.src.core.exceptions import DuplicateRecordError, ValidationError
+from backend.src.utils.conversation_state import RegistrationState, save_state_to_context_simple, load_state_from_context_simple, clear_state_simple
+from backend.src.utils.menu_builder import build_yesno_menu
+from backend.src.utils.logger import logger
 
 # Estados del ConversationHandler
 NAME, CONFIRM = range(1, 3)

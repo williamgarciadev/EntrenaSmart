@@ -14,8 +14,8 @@ from sqlalchemy import create_engine, func, DateTime
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.orm import Mapped, mapped_column
 
-from src.core.config import settings
-from src.utils.logger import logger
+from backend.src.core.config import settings
+from backend.src.utils.logger import logger
 
 
 # ============================================================================

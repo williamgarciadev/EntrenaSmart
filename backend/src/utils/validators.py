@@ -6,7 +6,7 @@ Validadores para EntrenaSmart
 Módulo con validadores reutilizables para datos de la aplicación.
 """
 import re
-from src.core.exceptions import LocationValidationError
+from backend.src.core.exceptions import LocationValidationError
 
 
 class LocationValidator:

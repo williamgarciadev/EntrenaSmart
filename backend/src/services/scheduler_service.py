@@ -33,8 +33,8 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.triggers.cron import CronTrigger
 
-from src.core.config import settings
-from src.utils.logger import logger
+from backend.src.core.config import settings
+from backend.src.utils.logger import logger
 
 # Variables globales para almacenar application, bot y event_loop (evita problemas de serialización)
 _global_application = None

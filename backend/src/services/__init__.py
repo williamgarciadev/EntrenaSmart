@@ -12,11 +12,11 @@ Servicios disponibles:
 - ReportService: Generación de reportes
 - SchedulerService: Programación de tareas automáticas
 """
-from src.services.student_service import StudentService
-from src.services.training_service import TrainingService
-from src.services.feedback_service import FeedbackService
-from src.services.report_service import ReportService
-from src.services.scheduler_service import SchedulerService
+from backend.src.services.student_service import StudentService
+from backend.src.services.training_service import TrainingService
+from backend.src.services.feedback_service import FeedbackService
+from backend.src.services.report_service import ReportService
+from backend.src.services.scheduler_service import SchedulerService
 
 __all__ = [
     "StudentService",

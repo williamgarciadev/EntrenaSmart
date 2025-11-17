@@ -24,18 +24,18 @@ from telegram.ext import (
     filters
 )
 
-from src.models.base import get_db_context
-from src.services.config_training_service import ConfigTrainingService
-from src.handlers.training_state_manager import TrainingStateManager
-from src.utils.validators import LocationValidator
-from src.core.exceptions import (
+from backend.src.models.base import get_db_context
+from backend.src.services.config_training_service import ConfigTrainingService
+from backend.src.handlers.training_state_manager import TrainingStateManager
+from backend.src.utils.validators import LocationValidator
+from backend.src.core.exceptions import (
     LocationValidationError,
     StateNotFoundError,
     ValidationError,
     DatabaseError,
     ConfigTrainingError
 )
-from src.utils.logger import logger
+from backend.src.utils.logger import logger
 
 # Estados del ConversationHandler
 SELECT_DAY = 1

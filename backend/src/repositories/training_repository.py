@@ -6,8 +6,8 @@ Repositorio de Entrenamientos
 from typing import List, Optional
 from sqlalchemy.orm import Session
 
-from src.models.training import Training
-from src.repositories.base_repository import BaseRepository
+from backend.src.models.training import Training
+from backend.src.repositories.base_repository import BaseRepository
 
 
 class TrainingRepository(BaseRepository[Training]):

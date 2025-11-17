@@ -16,7 +16,7 @@ from dataclasses import dataclass
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
-from src.core.constants import (
+from backend.src.core.constants import (
     SESSION_TYPES,
     WEEKDAY_NAMES,
     WEEKDAY_NAME_TO_NUMBER

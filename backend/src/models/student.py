@@ -9,7 +9,7 @@ from typing import Optional, List
 from sqlalchemy import BigInteger, Boolean, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.models.base import Base
+from backend.src.models.base import Base
 
 
 class Student(Base):

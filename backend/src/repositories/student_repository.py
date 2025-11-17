@@ -7,9 +7,9 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from src.models.student import Student
-from src.repositories.base_repository import BaseRepository
-from src.core.exceptions import RecordNotFoundError
+from backend.src.models.student import Student
+from backend.src.repositories.base_repository import BaseRepository
+from backend.src.core.exceptions import RecordNotFoundError
 
 
 class StudentRepository(BaseRepository[Student]):

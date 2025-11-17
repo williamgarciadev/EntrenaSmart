@@ -9,10 +9,10 @@ Integración con SchedulerService para recordatorios automáticos.
 from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
 
-from src.models.training import Training
-from src.repositories.training_repository import TrainingRepository
-from src.core.exceptions import ValidationError, RecordNotFoundError
-from src.utils.logger import logger
+from backend.src.models.training import Training
+from backend.src.repositories.training_repository import TrainingRepository
+from backend.src.core.exceptions import ValidationError, RecordNotFoundError
+from backend.src.utils.logger import logger
 
 
 class TrainingService:

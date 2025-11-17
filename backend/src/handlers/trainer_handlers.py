@@ -8,24 +8,24 @@ administrativos del entrenador.
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from src.models.base import get_db
-from src.services.student_service import StudentService
-from src.services.training_service import TrainingService
-from src.services.report_service import ReportService
-from src.services.scheduler_service import SchedulerService
-from src.services.tasks.reminder_task import ReminderTask
-from src.core.config import settings
-from src.core.exceptions import (
+from backend.src.models.base import get_db
+from backend.src.services.student_service import StudentService
+from backend.src.services.training_service import TrainingService
+from backend.src.services.report_service import ReportService
+from backend.src.services.scheduler_service import SchedulerService
+from backend.src.services.tasks.reminder_task import ReminderTask
+from backend.src.core.config import settings
+from backend.src.core.exceptions import (
     ValidationError,
     DuplicateRecordError,
     RecordNotFoundError,
     InvalidWeekdayError,
     InvalidTimeFormatError
 )
-from src.utils.messages import Messages
-from src.utils.menu_builder import build_trainer_commands_menu, build_student_commands_menu, build_yesno_menu
-from src.utils.logger import logger
-from src.utils.conversation_state import RegistrationState, TrainingState, save_state_to_context_simple, load_state_from_context_simple, clear_state_simple
+from backend.src.utils.messages import Messages
+from backend.src.utils.menu_builder import build_trainer_commands_menu, build_student_commands_menu, build_yesno_menu
+from backend.src.utils.logger import logger
+from backend.src.utils.conversation_state import RegistrationState, TrainingState, save_state_to_context_simple, load_state_from_context_simple, clear_state_simple
 
 
 def is_trainer(user_id: int) -> bool:
