@@ -15,7 +15,7 @@ import {
 import { useTemplates } from '@/hooks/useTemplates'
 import { useToast } from '@/components/Toast'
 import { Button } from '@/components/ui/Button'
-import type { MessageSchedule } from '@/lib/api'
+import type { MessageSchedule, Template } from '@/lib/api'
 
 // Datos simulados para estudiantes
 const MOCK_STUDENTS = [
@@ -174,7 +174,7 @@ export default function SchedulesPage() {
   }
 
   const getTemplateName = (templateId: number) => {
-    const template = templatesData?.templates.find((t) => t.id === templateId)
+    const template = templatesData?.templates.find((t: Template) => t.id === templateId)
     return template?.name || `Template ${templateId}`
   }
 
@@ -267,7 +267,7 @@ export default function SchedulesPage() {
                           {formatTime(schedule.hour, schedule.minute)} • {schedule.days_of_week.length} días
                         </p>
                         <div className="flex flex-wrap gap-1 mt-2">
-                          {schedule.days_of_week.map((dayId) => {
+                          {schedule.days_of_week.map((dayId: number) => {
                             const dayName = DAYS_OF_WEEK.find((d) => d.id === dayId)?.name
                             return (
                               <span
@@ -325,7 +325,7 @@ export default function SchedulesPage() {
                       className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                     >
                       <option value={0}>Selecciona una plantilla</option>
-                      {templatesData?.templates.map((template) => (
+                      {templatesData?.templates.map((template: Template) => (
                         <option key={template.id} value={template.id}>
                           {template.name}
                         </option>

@@ -20,8 +20,8 @@ export const studentSchema = z.object({
     )
     .optional()
     .or(z.literal('')),
-  
-  is_active: z.boolean().default(true),
+
+  is_active: z.boolean(),
 })
 
 export type StudentFormData = z.infer<typeof studentSchema>

@@ -128,7 +128,7 @@ export function useDeleteTemplate() {
  * Hook para obtener preview de plantilla con variables reemplazadas
  */
 export function useTemplatePreview(templateId: number) {
-  return useMutation({
+  return useMutation<string, Error, Record<string, string>>({
     mutationFn: (variablesValues: Record<string, string>) =>
       templatesAPI.previewTemplate(templateId, variablesValues),
   })

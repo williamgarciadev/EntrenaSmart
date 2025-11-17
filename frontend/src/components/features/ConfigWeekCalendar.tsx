@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useWeeklyConfig, useUpdateDayConfig } from '@/hooks/useTrainingConfig'
 import { Button } from '@/components/ui/Button'
+import type { TrainingDayConfig } from '@/lib/api'
 
 const TRAINING_TYPES = [
   'Pierna',
@@ -20,7 +21,7 @@ export function ConfigWeekCalendar() {
     location: '',
   })
 
-  const handleEdit = (dayConfig: any) => {
+  const handleEdit = (dayConfig: TrainingDayConfig) => {
     setEditingDay(dayConfig.weekday)
     setFormData({
       sessionType: dayConfig.session_type,
@@ -82,7 +83,7 @@ export function ConfigWeekCalendar() {
 }
 
 interface DayConfigRowProps {
-  config: any
+  config: TrainingDayConfig
   isEditing: boolean
   formData: { sessionType: string; location: string }
   onEdit: () => void
