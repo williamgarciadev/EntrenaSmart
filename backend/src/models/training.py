@@ -81,19 +81,19 @@ class Training(Base):
 
     # Relaciones
     student: Mapped["Student"] = relationship(
-        "Student",
+        "src.models.student.Student",
         back_populates="trainings",
         lazy="joined"
     )
 
     training_day_config: Mapped[Optional["TrainingDayConfig"]] = relationship(
-        "TrainingDayConfig",
+        "src.models.training_day_config.TrainingDayConfig",
         lazy="joined",
         foreign_keys=[training_day_config_id]
     )
 
     feedbacks: Mapped[List["Feedback"]] = relationship(
-        "Feedback",
+        "src.models.feedback.Feedback",
         back_populates="training",
         cascade="all, delete-orphan",
         lazy="select"

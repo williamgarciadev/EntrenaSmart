@@ -11,18 +11,19 @@ Repositorios disponibles:
 - StudentRepository: Operaciones específicas de alumnos
 - TrainingRepository: Operaciones específicas de entrenamientos
 - FeedbackRepository: Operaciones específicas de feedback
+- ConfigTrainingRepository: Operaciones de configuración semanal
 """
-from backend.src.repositories.base_repository import BaseRepository
-from backend.src.repositories.student_repository import StudentRepository
-from backend.src.repositories.training_repository import TrainingRepository
-from backend.src.repositories.feedback_repository import FeedbackRepository
-from backend.src.repositories.schedule_repository import ScheduleRepository
+from src.repositories.base_repository import BaseRepository
+from src.repositories.student_repository import StudentRepository
+from src.repositories.training_repository import TrainingRepository
+from src.repositories.feedback_repository import FeedbackRepository
+from src.repositories.config_training_repository import ConfigTrainingRepository
 
 __all__ = [
     "BaseRepository",
     "StudentRepository",
     "TrainingRepository",
     "FeedbackRepository",
-    "ScheduleRepository",
+    "ConfigTrainingRepository",
 ]
 

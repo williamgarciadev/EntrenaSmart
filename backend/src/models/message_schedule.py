@@ -67,7 +67,7 @@ class MessageSchedule(Base):
 
     # Relación con estudiante
     student: Mapped["Student"] = relationship(
-        "Student",
+        "src.models.student.Student",
         back_populates="message_schedules",
         lazy="select"
     )

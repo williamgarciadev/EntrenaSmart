@@ -55,14 +55,14 @@ class Student(Base):
 
     # Relaciones
     trainings: Mapped[List["Training"]] = relationship(
-        "Training",
+        "src.models.training.Training",
         back_populates="student",
         cascade="all, delete-orphan",
         lazy="select"
     )
 
     message_schedules: Mapped[List["MessageSchedule"]] = relationship(
-        "MessageSchedule",
+        "src.models.message_schedule.MessageSchedule",
         back_populates="student",
         cascade="all, delete-orphan",
         lazy="select"
