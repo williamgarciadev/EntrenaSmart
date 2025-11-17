@@ -23,6 +23,7 @@ class Training(Base):
     """
 
     __tablename__ = "trainings"
+    __table_args__ = {'extend_existing': True}
 
     # Clave foranea
     student_id: Mapped[int] = mapped_column(
