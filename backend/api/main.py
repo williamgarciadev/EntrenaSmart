@@ -20,6 +20,20 @@ from .middleware import verify_auth_header
 CORS_ORIGINS = os.getenv("API_CORS_ORIGINS", "http://localhost:5173").split(",")
 
 
+# Variable global para la instancia del bot de Telegram
+_telegram_bot = None
+
+
+def get_telegram_bot():
+    """
+    Obtiene la instancia singleton del bot de Telegram.
+
+    Returns:
+        Bot: Instancia del bot o None si no está configurado
+    """
+    return _telegram_bot
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
@@ -27,6 +41,8 @@ async def lifespan(app: FastAPI):
 
     Se ejecuta al iniciar (yield) y al detener.
     """
+    global _telegram_bot
+
     # Startup
     print("[STARTUP] API EntrenaSmart iniciada")
     print("[STARTUP] Inicializando base de datos...")
@@ -39,14 +55,25 @@ async def lifespan(app: FastAPI):
         TrainingDayConfig,
         Feedback,
         MessageSchedule,
-        MessageTemplate  # ← NUEVO: Agregado para crear tabla message_templates
+        MessageTemplate
     )
 
     # Inicializar base de datos
     init_db()
     print("[STARTUP] Base de datos inicializada")
 
+    # Inicializar bot de Telegram (singleton)
+    telegram_token = os.getenv("TELEGRAM_BOT_TOKEN")
+    if telegram_token:
+        print("[STARTUP] Inicializando bot de Telegram...")
+        from telegram import Bot
+        _telegram_bot = Bot(token=telegram_token)
+        print("[STARTUP] ✅ Bot de Telegram inicializado")
+    else:
+        print("[STARTUP] ⚠️  TELEGRAM_BOT_TOKEN no configurado - funciones de mensajería deshabilitadas")
+
     yield
+
     # Shutdown
     print("[SHUTDOWN] API EntrenaSmart detenida")
 

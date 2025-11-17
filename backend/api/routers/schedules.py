@@ -354,26 +354,28 @@ async def test_schedule(
 
         # Intentar enviar mensaje usando el bot de Telegram
         try:
-            import os
-            from telegram import Bot
+            from ..main import get_telegram_bot
 
-            # Obtener token desde variable de entorno
-            telegram_token = os.getenv("TELEGRAM_BOT_TOKEN")
+            # Obtener instancia singleton del bot
+            bot = get_telegram_bot()
 
-            if not telegram_token:
-                logger.error("TELEGRAM_BOT_TOKEN no está configurado")
+            if not bot:
+                logger.error("Bot de Telegram no está inicializado")
                 return {
                     "success": False,
-                    "message": "Token de Telegram no configurado en el servidor",
+                    "message": "Bot de Telegram no configurado en el servidor. Verifica TELEGRAM_BOT_TOKEN.",
                     "schedule_id": schedule_id,
                     "timestamp": datetime.now().isoformat(),
-                    "error": "TOKEN_NOT_CONFIGURED"
+                    "error": "BOT_NOT_INITIALIZED",
+                    "debug_info": {
+                        "would_send_to": student.name,
+                        "chat_id": student.chat_id,
+                        "template": template_name,
+                        "message_preview": message_content
+                    }
                 }
 
-            # Crear instancia del bot para enviar mensaje
-            bot = Bot(token=telegram_token)
-
-            # Enviar mensaje de prueba
+            # Enviar mensaje de prueba usando instancia singleton
             await bot.send_message(
                 chat_id=student.chat_id,
                 text=f"🧪 <b>MENSAJE DE PRUEBA</b>\n\n{message_content}",
