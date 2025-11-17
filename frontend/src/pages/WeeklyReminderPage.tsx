@@ -289,7 +289,7 @@ export function WeeklyReminderPage() {
           <Button
             onClick={handleSendTest}
             disabled={testMutation.isPending || !formData.is_active}
-            variant="outline"
+            variant="secondary"
           >
             <Send className="w-4 h-4 mr-2" />
             {testMutation.isPending ? 'Enviando...' : 'Enviar Prueba'}

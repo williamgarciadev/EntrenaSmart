@@ -353,3 +353,65 @@ export const trainingConfigAPI = {
     if (!response.ok) throw new Error('Failed to delete day config')
   }
 }
+
+// ============================================================================
+// WEEKLY REMINDERS
+// ============================================================================
+
+export interface WeeklyReminderConfig {
+  id: number
+  is_monday_off: boolean
+  message_full_week: string
+  message_monday_off: string
+  send_day: number
+  send_day_name: string
+  send_hour: number
+  send_minute: number
+  send_time: string
+  is_active: boolean
+  current_message: string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface WeeklyReminderConfigUpdate {
+  is_monday_off?: boolean
+  message_full_week?: string
+  message_monday_off?: string
+  send_day?: number
+  send_hour?: number
+  send_minute?: number
+  is_active?: boolean
+}
+
+export const weeklyReminderAPI = {
+  async getConfig(): Promise<WeeklyReminderConfig> {
+    const response = await fetch(`${API_BASE_URL}/api/weekly-reminders/config`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+    if (!response.ok) throw new Error('Failed to fetch weekly reminder config')
+    return response.json()
+  },
+
+  async updateConfig(data: WeeklyReminderConfigUpdate): Promise<WeeklyReminderConfig> {
+    const response = await fetch(`${API_BASE_URL}/api/weekly-reminders/config`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify(data)
+    })
+    if (!response.ok) throw new Error('Failed to update weekly reminder config')
+    return response.json()
+  },
+
+  async sendTest(): Promise<{ success: boolean; message: string }> {
+    const response = await fetch(`${API_BASE_URL}/api/weekly-reminders/send-test`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+    if (!response.ok) throw new Error('Failed to send test message')
+    return response.json()
+  }
+}
