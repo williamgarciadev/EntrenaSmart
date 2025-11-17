@@ -15,7 +15,6 @@ from fastapi.responses import JSONResponse
 
 from .routers import auth, training_config, templates, schedules, students
 from .middleware import verify_auth_header
-from backend.src.models.base import init_db
 
 # Configuración CORS
 CORS_ORIGINS = os.getenv("API_CORS_ORIGINS", "http://localhost:5173").split(",")
@@ -31,8 +30,15 @@ async def lifespan(app: FastAPI):
     # Startup
     print("[STARTUP] API EntrenaSmart iniciada")
     print("[STARTUP] Inicializando base de datos...")
+
+    # Importar init_db y todos los modelos para que se registren
+    from src.models.base import init_db
+    from src.models import Student, Training, TrainingDayConfig, Feedback, MessageSchedule
+
+    # Inicializar base de datos
     init_db()
     print("[STARTUP] Base de datos inicializada")
+
     yield
     # Shutdown
     print("[SHUTDOWN] API EntrenaSmart detenida")

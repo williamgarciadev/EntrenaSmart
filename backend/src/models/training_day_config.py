@@ -30,7 +30,6 @@ class TrainingDayConfig(Base):
     """
 
     __tablename__ = "training_day_configs"
-    __table_args__ = {'extend_existing': True}
 
     # Configuración del día
     weekday: Mapped[int] = mapped_column(
