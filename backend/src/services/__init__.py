@@ -11,12 +11,14 @@ Servicios disponibles:
 - FeedbackService: Gestión de feedback
 - ReportService: Generación de reportes
 - SchedulerService: Programación de tareas automáticas
+- ConfigTrainingService: Configuración semanal de entrenamientos
 """
 from src.services.student_service import StudentService
 from src.services.training_service import TrainingService
 from src.services.feedback_service import FeedbackService
 from src.services.report_service import ReportService
 from src.services.scheduler_service import SchedulerService
+from src.services.config_training_service import ConfigTrainingService
 
 __all__ = [
     "StudentService",
@@ -24,5 +26,6 @@ __all__ = [
     "FeedbackService",
     "ReportService",
     "SchedulerService",
+    "ConfigTrainingService",
 ]
 
