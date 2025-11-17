@@ -54,7 +54,7 @@ class Feedback(Base):
 
     # Relaciones
     training: Mapped["Training"] = relationship(
-        "Training",
+        "src.models.training.Training",
         back_populates="feedbacks",
         lazy="joined"
     )
