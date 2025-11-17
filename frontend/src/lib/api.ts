@@ -21,7 +21,7 @@ export interface Student {
 export interface StudentCreate {
   name: string
   telegram_username?: string
-  is_active: boolean
+  is_active?: boolean
 }
 
 export interface StudentUpdate {
@@ -171,6 +171,19 @@ export const templatesAPI = {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     })
     if (!response.ok) throw new Error('Failed to delete template')
+  },
+
+  async previewTemplate(id: number, variables: Record<string, string>): Promise<{ preview_content: string }> {
+    const response = await fetch(`${API_BASE_URL}/api/templates/${id}/preview`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({ variables })
+    })
+    if (!response.ok) throw new Error('Failed to preview template')
+    return response.json()
   }
 }
 
@@ -311,7 +324,15 @@ export const trainingConfigAPI = {
     return response.json()
   },
 
-  async updateDayConfig(data: TrainingDayConfigCreate): Promise<TrainingDayConfig> {
+  async getDayConfig(weekday: number): Promise<TrainingDayConfig> {
+    const response = await fetch(`${API_BASE_URL}/api/training-config/day/${weekday}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+    if (!response.ok) throw new Error('Failed to fetch day config')
+    return response.json()
+  },
+
+  async updateDayConfig(weekday: number, data: TrainingDayConfigCreate): Promise<TrainingDayConfig> {
     const response = await fetch(`${API_BASE_URL}/api/training-config/day`, {
       method: 'POST',
       headers: {
@@ -322,5 +343,13 @@ export const trainingConfigAPI = {
     })
     if (!response.ok) throw new Error('Failed to update day config')
     return response.json()
+  },
+
+  async deleteDayConfig(weekday: number): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/api/training-config/day/${weekday}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+    if (!response.ok) throw new Error('Failed to delete day config')
   }
 }
