@@ -309,6 +309,33 @@ python3 --version
 alias python=python3
 ```
 
+### Error: "Access to the path ... is denied" al eliminar .venv
+
+Este error ocurre cuando el entorno virtual está en uso por algún proceso.
+
+**Windows PowerShell:**
+```powershell
+# 1. Desactivar entorno virtual si está activo
+deactivate
+
+# 2. Cerrar IDEs (VSCode, PyCharm, etc.)
+
+# 3. Esperar y forzar eliminación
+Start-Sleep -Seconds 2
+Remove-Item -Recurse -Force .venv -ErrorAction SilentlyContinue
+
+# 4. Si persiste, renombrar y crear nuevo
+if (Test-Path .venv) {
+    Rename-Item .venv .venv_old
+    Write-Host "Entorno renombrado. Elimina .venv_old manualmente después."
+}
+
+# 5. Ejecutar setup nuevamente
+.\setup.ps1
+```
+
+**Nota:** El script `setup.ps1` v1.1+ maneja esto automáticamente renombrando el directorio.
+
 ### Error: "Module not found"
 
 **Backend:**

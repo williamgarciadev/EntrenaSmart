@@ -23,9 +23,14 @@
     .\setup.ps1 -SkipChecks -RunAfterSetup
 
 .NOTES
-    Versión: 1.0.0
+    Versión: 1.1.0
     Autor: EntrenaSmart Team
     Requiere: PowerShell 5.1 o superior
+
+    Changelog v1.1.0:
+    - Manejo mejorado de entornos virtuales en uso
+    - Renombrado automático cuando falla la eliminación
+    - Mensajes de error más descriptivos
 #>
 
 param(
@@ -153,7 +158,33 @@ if (Test-Path $VenvDir) {
     $response = Read-Host
     if ($response -eq "S" -or $response -eq "s") {
         Write-Info "Eliminando entorno virtual existente..."
-        Remove-Item -Recurse -Force $VenvDir
+
+        # Intentar eliminar, pero si falla por archivos en uso, renombrar
+        try {
+            Remove-Item -Recurse -Force $VenvDir -ErrorAction Stop
+            Write-Success "✓ Entorno virtual eliminado"
+        } catch {
+            Write-Warning "⚠ No se pudo eliminar el entorno virtual (archivos en uso)"
+            Write-Info "Renombrando a .venv_old y creando uno nuevo..."
+
+            # Generar nombre único con timestamp
+            $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+            $oldVenvName = ".venv_old_$timestamp"
+
+            try {
+                Rename-Item $VenvDir $oldVenvName -ErrorAction Stop
+                Write-Success "✓ Entorno antiguo renombrado a $oldVenvName"
+                Write-Info "Puedes eliminarlo manualmente cuando cierres todos los procesos"
+            } catch {
+                Write-Error "✗ Error: No se pudo renombrar el entorno virtual"
+                Write-Warning "Por favor:"
+                Write-Warning "  1. Cierra VSCode, PyCharm y otros IDEs"
+                Write-Warning "  2. Ejecuta: deactivate (si el venv está activo)"
+                Write-Warning "  3. Ejecuta: Remove-Item -Recurse -Force .venv"
+                Write-Warning "  4. Vuelve a ejecutar este script"
+                exit 1
+            }
+        }
     } else {
         Write-Info "Usando entorno virtual existente"
     }
