@@ -15,13 +15,14 @@ from ..schemas import (
 )
 from ..dependencies import get_current_trainer
 from ..logger import logger
-from src.models.base import get_db_context
-from src.services.message_schedule_service import MessageScheduleService
-from src.core.exceptions import (
+from backend.src.models.base import get_db_context
+from backend.src.services.message_schedule_service import MessageScheduleService
+from backend.src.core.exceptions import (
     ValidationError,
     DuplicateRecordError,
     RecordNotFoundError
 )
+from backend.src.repositories.student_repository import StudentRepository
 
 router = APIRouter()
 
@@ -288,15 +289,97 @@ async def test_schedule(
             service = MessageScheduleService(db)
             schedule = service.get_schedule_by_id_or_fail(schedule_id)
 
+            # Obtener estudiante para tener el chat_id
+            student_repo = StudentRepository(db)
+            student = student_repo.get_by_id(schedule.student_id)
+
+            if not student:
+                logger.warning(f"Estudiante {schedule.student_id} no encontrado")
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Estudiante {schedule.student_id} no encontrado"
+                )
+
+            if not student.chat_id:
+                logger.warning(f"Estudiante {student.name} no tiene chat_id configurado")
+                return {
+                    "success": False,
+                    "message": f"El estudiante {student.name} no tiene un chat de Telegram configurado",
+                    "schedule_id": schedule_id,
+                    "timestamp": datetime.now().isoformat(),
+                    "error": "NO_CHAT_ID"
+                }
+
         logger.info(f"Enviando mensaje de prueba: programación {schedule_id}")
 
-        # TODO: Implementar envío real de mensaje de prueba
-        return {
-            "success": True,
-            "message": f"Mensaje de prueba enviado exitosamente",
-            "schedule_id": schedule_id,
-            "timestamp": datetime.now().isoformat()
-        }
+        # Obtener template (por ahora de MOCK_TEMPLATES)
+        from ..routers.templates import MOCK_TEMPLATES
+        template = MOCK_TEMPLATES.get(schedule.template_id)
+
+        if not template:
+            logger.warning(f"Plantilla {schedule.template_id} no encontrada")
+            return {
+                "success": False,
+                "message": f"Plantilla {schedule.template_id} no encontrada",
+                "schedule_id": schedule_id,
+                "timestamp": datetime.now().isoformat(),
+                "error": "TEMPLATE_NOT_FOUND"
+            }
+
+        # Construir mensaje reemplazando variables
+        message_content = template["content"]
+        message_content = message_content.replace("{alumno}", student.name)
+        message_content = message_content.replace("{tipo_entrenamiento}", "Entrenamiento")
+
+        # Intentar enviar mensaje usando el bot de Telegram
+        try:
+            from backend.src.services.scheduler_service import get_global_application
+            application = get_global_application()
+
+            if application and application.bot:
+                bot = application.bot
+                await bot.send_message(
+                    chat_id=student.chat_id,
+                    text=f"🧪 <b>MENSAJE DE PRUEBA</b>\n\n{message_content}",
+                    parse_mode="HTML"
+                )
+                logger.info(f"✅ Mensaje de prueba enviado a {student.name} (chat_id: {student.chat_id})")
+                return {
+                    "success": True,
+                    "message": f"Mensaje de prueba enviado exitosamente a {student.name}",
+                    "schedule_id": schedule_id,
+                    "timestamp": datetime.now().isoformat(),
+                    "chat_id": student.chat_id
+                }
+            else:
+                logger.warning("Bot de Telegram no está disponible")
+                return {
+                    "success": False,
+                    "message": "Bot de Telegram no está disponible. Asegúrate de que el servicio 'bot' esté corriendo.",
+                    "schedule_id": schedule_id,
+                    "timestamp": datetime.now().isoformat(),
+                    "error": "BOT_NOT_AVAILABLE",
+                    "debug_info": {
+                        "would_send_to": student.name,
+                        "chat_id": student.chat_id,
+                        "template": template["name"],
+                        "message_preview": message_content
+                    }
+                }
+        except Exception as send_error:
+            logger.error(f"Error enviando mensaje a Telegram: {send_error}", exc_info=True)
+            return {
+                "success": False,
+                "message": f"Error al enviar mensaje: {str(send_error)}",
+                "schedule_id": schedule_id,
+                "timestamp": datetime.now().isoformat(),
+                "error": "TELEGRAM_ERROR",
+                "debug_info": {
+                    "student": student.name,
+                    "chat_id": student.chat_id,
+                    "template": template["name"]
+                }
+            }
 
     except RecordNotFoundError:
         logger.warning(f"Programación {schedule_id} no encontrada en BD")
@@ -304,9 +387,11 @@ async def test_schedule(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Programación {schedule_id} no encontrada"
         )
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error enviando mensaje de prueba: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error al enviar mensaje de prueba"
+            detail=f"Error al enviar mensaje de prueba: {str(e)}"
         )
