@@ -14,6 +14,7 @@ from backend.src.models.student import Student
 from backend.src.models.training import Training
 from backend.src.models.training_day_config import TrainingDayConfig
 from backend.src.models.feedback import Feedback
+from backend.src.models.message_schedule import MessageSchedule
 
 __all__ = [
     "Base",
@@ -25,5 +26,6 @@ __all__ = [
     "Training",
     "TrainingDayConfig",
     "Feedback",
+    "MessageSchedule",
 ]
 

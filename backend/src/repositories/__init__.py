@@ -16,11 +16,13 @@ from backend.src.repositories.base_repository import BaseRepository
 from backend.src.repositories.student_repository import StudentRepository
 from backend.src.repositories.training_repository import TrainingRepository
 from backend.src.repositories.feedback_repository import FeedbackRepository
+from backend.src.repositories.schedule_repository import ScheduleRepository
 
 __all__ = [
     "BaseRepository",
     "StudentRepository",
     "TrainingRepository",
     "FeedbackRepository",
+    "ScheduleRepository",
 ]
 

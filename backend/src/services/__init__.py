@@ -17,6 +17,7 @@ from backend.src.services.training_service import TrainingService
 from backend.src.services.feedback_service import FeedbackService
 from backend.src.services.report_service import ReportService
 from backend.src.services.scheduler_service import SchedulerService
+from backend.src.services.schedule_service import ScheduleService
 
 __all__ = [
     "StudentService",
@@ -24,5 +25,6 @@ __all__ = [
     "FeedbackService",
     "ReportService",
     "SchedulerService",
+    "ScheduleService",
 ]
 
