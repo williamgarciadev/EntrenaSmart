@@ -21,7 +21,7 @@ COPY backend/ backend/
 # Variable de entorno
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONPATH=/app/backend
+ENV PYTHONPATH=/app
 
 # Comando para ejecutar el bot
 CMD ["python", "backend/main.py"]
