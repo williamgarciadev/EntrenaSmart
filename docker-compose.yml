@@ -136,6 +136,62 @@ services:
     networks:
       - entrenasmart-network
 
+  # ============================================================================
+  # pgAdmin - Administración de PostgreSQL
+  # ============================================================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: entrenasmart-pgadmin
+    restart: unless-stopped
+
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@entrenasmart.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION: 'False'
+
+    ports:
+      - "5050:80"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/misc/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    networks:
+      - entrenasmart-network
+
+  # ============================================================================
+  # Adminer - Herramienta universal de administración de BD
+  # ============================================================================
+  adminer:
+    image: adminer:latest
+    container_name: entrenasmart-adminer
+    restart: unless-stopped
+
+    ports:
+      - "8080:8080"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    networks:
+      - entrenasmart-network
+
 # ============================================================================
 # Volúmenes persistentes
 # ============================================================================

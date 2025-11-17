@@ -13,8 +13,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from backend.api.routers import auth, training_config
-from backend.api.middleware import verify_auth_header
+from .routers import auth, training_config, templates, schedules, students
+from .middleware import verify_auth_header
 
 # Configuración CORS
 CORS_ORIGINS = os.getenv("API_CORS_ORIGINS", "http://localhost:5173").split(",")
@@ -28,10 +28,10 @@ async def lifespan(app: FastAPI):
     Se ejecuta al iniciar (yield) y al detener.
     """
     # Startup
-    print("🚀 API EntrenaSmart iniciada")
+    print("[STARTUP] API EntrenaSmart iniciada")
     yield
     # Shutdown
-    print("🛑 API EntrenaSmart detenida")
+    print("[SHUTDOWN] API EntrenaSmart detenida")
 
 
 # Crear aplicación FastAPI
@@ -73,6 +73,9 @@ async def health_check():
 # Incluir routers
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(training_config.router, prefix="/api/training-config", tags=["Training Config"])
+app.include_router(templates.router, prefix="/api/templates", tags=["Templates"])
+app.include_router(schedules.router, prefix="/api/schedules", tags=["Schedules"])
+app.include_router(students.router, prefix="/api/students", tags=["Students"])
 
 
 # Manejador de errores global

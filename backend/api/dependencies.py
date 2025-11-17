@@ -4,15 +4,16 @@ Dependencias compartidas para la API.
 Incluye autenticación, validación y acceso a servicios.
 """
 import os
-from typing import Generator
+from typing import Generator, Optional
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthCredentials
+from fastapi.security import HTTPBearer
+from starlette.requests import HTTPConnection
 
 # Simulación de usuario autenticado
 # En producción, usar JWT tokens y verificar contra base de datos
 
 
-def verify_trainer_access(credentials: HTTPAuthCredentials = Depends(HTTPBearer())):
+def verify_trainer_access(credentials = Depends(HTTPBearer())):
     """
     Verifica que el token corresponde al entrenador autorizado.
 

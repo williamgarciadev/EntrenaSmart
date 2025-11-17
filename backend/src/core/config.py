@@ -76,15 +76,42 @@ class Settings(BaseSettings):
     # ====================================
     # Configuración de Base de Datos
     # ====================================
+    database_url: Optional[str] = Field(
+        default=None,
+        description="URL de conexión a la base de datos (PostgreSQL/MySQL). Si no está definida, usa SQLite."
+    )
+
     database_path: Path = Field(
         default=Path("storage/entrenasmart.db"),
-        description="Ruta de la base de datos SQLite"
+        description="Ruta de la base de datos SQLite (solo si database_url no está definida)"
     )
 
     @property
-    def database_url(self) -> str:
-        """URL de conexión a la base de datos."""
+    def get_database_url(self) -> str:
+        """Obtiene la URL de conexión a la base de datos.
+
+        Prioridad:
+        1. DATABASE_URL desde variables de entorno (PostgreSQL/MySQL en Docker)
+        2. SQLite local en desarrollo
+        """
+        if self.database_url:
+            return self.database_url
         return f"sqlite:///{self.database_path}"
+
+    @property
+    def is_postgres(self) -> bool:
+        """Retorna True si se está usando PostgreSQL."""
+        return self.database_url is not None and self.database_url.startswith("postgresql://")
+
+    @property
+    def is_mysql(self) -> bool:
+        """Retorna True si se está usando MySQL."""
+        return self.database_url is not None and self.database_url.startswith("mysql+")
+
+    @property
+    def is_sqlite(self) -> bool:
+        """Retorna True si se está usando SQLite."""
+        return not self.database_url or self.database_url.startswith("sqlite://")
 
     # ====================================
     # Configuración de Logging

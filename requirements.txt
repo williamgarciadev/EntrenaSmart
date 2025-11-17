@@ -22,3 +22,4 @@ pytz>=2023.3
 FastAPI>=0.104.0,<1.0.0
 uvicorn[standard]>=0.24.0,<1.0.0
 
+psycopg2-binary>=2.9.0,<3.0.0

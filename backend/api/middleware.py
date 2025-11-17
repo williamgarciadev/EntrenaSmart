@@ -8,7 +8,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 from fastapi import HTTPException, status
-from backend.utils.logger import logger
+from .logger import logger
 
 
 async def verify_auth_header(request: Request, call_next):

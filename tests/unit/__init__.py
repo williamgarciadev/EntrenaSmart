@@ -1,2 +1,0 @@
-"""Tests unitarios de EntrenaSmart."""
-

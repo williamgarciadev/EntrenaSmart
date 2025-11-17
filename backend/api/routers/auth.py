@@ -3,9 +3,9 @@ Router de autenticación.
 
 Endpoints para login y obtener información del usuario actual.
 """
-from fastapi import APIRouter, HTTPException, status
-from backend.api.schemas import AuthLoginRequest, AuthTokenResponse, AuthMeResponse
-from backend.api.dependencies import get_current_trainer
+from fastapi import APIRouter, HTTPException, status, Depends
+from ..schemas import AuthLoginRequest, AuthTokenResponse, AuthMeResponse
+from ..dependencies import get_current_trainer
 
 router = APIRouter()
 
@@ -38,7 +38,7 @@ async def login(credentials: AuthLoginRequest):
 
 
 @router.get("/me", response_model=AuthMeResponse)
-async def get_me(trainer: dict = await get_current_trainer()):
+async def get_me(trainer: dict = Depends(get_current_trainer)):
     """
     Obtener información del usuario autenticado.
     """
@@ -50,7 +50,7 @@ async def get_me(trainer: dict = await get_current_trainer()):
 
 
 @router.post("/logout")
-async def logout(trainer: dict = await get_current_trainer()):
+async def logout(trainer: dict = Depends(get_current_trainer)):
     """
     Logout del usuario.
 

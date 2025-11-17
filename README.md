@@ -1,122 +1,153 @@
-# 🏋️ EntrenaSmart - Bot de Telegram para Gestión de Entrenamientos
+# 🏋️ EntrenaSmart - Gestión de Entrenamientos
 
-[![Version](https://img.shields.io/badge/version-1.0.0-brightgreen.svg)](VERSION)
-[![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/status-stable-brightgreen.svg)](#)
+**EntrenaSmart** es una aplicación full-stack moderna para gestionar tu programación de entrenamientos personalizados.
 
-**EntrenaSmart** es un bot inteligente de Telegram que te ayuda a gestionar tu programación de entrenamientos personalizados.
+## 🚀 Inicio Rápido
 
-## ✨ Características Principales
+### Requisitos Previos
+- **Docker Desktop**: v20.10+
+- **Docker Compose**: v1.29+ (incluido en Docker Desktop)
+- **Windows 11** (o Linux/macOS con scripts `.sh`)
 
-### 🎯 Configuración de Entrenamientos
-- ✅ Configura tu programación semanal
-- ✅ Especifica tipo de entrenamiento
-- ✅ Indica ubicación
-- ✅ Soporte para múltiples entrenamientos
+### Instalación en Un Comando
 
-### ⏰ Recordatorios Automáticos
-- ✅ Recordatorios 5 minutos antes
-- ✅ Información completa en cada recordatorio
-- ✅ Múltiples recordatorios simultáneos
-
-### 👥 Gestión de Usuarios
-- ✅ Registro automático
-- ✅ Almacenamiento seguro
-- ✅ Gestión de estado conversacional
-
-## 🚀 Instalación Rápida
-
-```bash
-# Clonar repositorio
-git clone https://github.com/williamgarciadev/EntrenaSmart.git
-cd EntrenaSmart
-
-# Crear ambiente virtual
-python -m venv .venv
-.venv\Scripts\activate  # Windows
-
-# Instalar dependencias
-pip install -r requirements.txt
-
-# Configurar variables de entorno
-cp .env.example .env
-# Editar .env con tu token de Telegram
-
-# Ejecutar el bot
-python main.py
+#### Windows 11 (Opción 1: PowerShell)
+```powershell
+.\setup.ps1
 ```
 
-## 📖 Comandos Disponibles
-
-| Comando | Descripción |
-|---------|-------------|
-| `/start` | Inicia el bot |
-| `/registrarme` | Registrar nuevo usuario |
-| `/config_semana` | Configurar entrenamientos semanales |
-| `/set` | Crear entrenamiento manual |
-| `/editar_sesion` | Editar entrenamiento |
-| `/semana` | Ver programación semanal |
-| `/help` | Ver ayuda |
-
-## 🧪 Testing
-
-```bash
-# Tests de flujo básico
-python test_config_semana.py
-
-# Tests de persistencia
-python test_config_semana_persistence.py
+#### Windows 11 (Opción 2: Batch/CMD)
+```batch
+setup.bat
 ```
 
-**Resultado**: ✅ 16/16 tests pasando
+#### Linux/macOS
+```bash
+./setup.sh
+```
 
-## 🏗️ Tecnologías
+Esto hará automáticamente:
+1. ✅ Verifica Docker y Docker Compose
+2. ✅ Crea archivo `.env` con variables de entorno
+3. ✅ Construye las imágenes Docker
+4. ✅ Inicia todos los servicios
+5. ✅ Verifica la salud de los servicios
 
-- **Python 3.8+**
-- **python-telegram-bot 20.7**
-- **SQLAlchemy 2.0.23**
-- **APScheduler 3.10.4**
-- **SQLite**
+### Acceso a Servicios
 
-## 📊 Estadísticas
+Después de ejecutar el script de instalación, accede a:
 
-- **Versión**: 1.0.0
-- **Código**: ~3,500 líneas
-- **Tests**: 16/16 pasando
-- **Status**: ✅ Estable y Listo para Producción
+- **Frontend (React)**: http://localhost:5173
+- **API Backend**: http://localhost:8000
+- **API Docs**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
 
-## 📝 Documentación Completa
+## 📦 Arquitectura
 
-- [RELEASE_NOTES.md](RELEASE_NOTES.md) - Notas de release
-- [CHANGELOG.md](CHANGELOG.md) - Historial de cambios
-- [FIX_STATE_MACHINE.md](FIX_STATE_MACHINE.md) - Fix de máquina de estados
-- [FIX_REMINDER_BOT_ACCESS.md](FIX_REMINDER_BOT_ACCESS.md) - Fix de recordatorios
+```
+Frontend          Backend           Database
+React/Vite    →   FastAPI      →   PostgreSQL
+Nginx             Uvicorn          Port 5432
+Port 5173         Port 8000
+```
+
+**Stack Tecnológico**:
+- **Frontend**: React 18, Vite, Tailwind CSS, shadcn/ui, Framer Motion
+- **Backend**: FastAPI, Python 3.11, Uvicorn
+- **Database**: PostgreSQL 16
+- **Bot**: Python Telegram Bot (opcional)
+
+## 🛠️ Comandos Útiles
+
+### PowerShell (Windows 11)
+```powershell
+# Ver logs en tiempo real
+docker-compose logs -f
+
+# Ver estado de servicios
+docker-compose ps
+
+# Detener servicios
+.\docker-stop.ps1
+
+# Usar utilidades (backup, restore, etc)
+.\docker-utils.ps1
+```
+
+### Terminal (Linux/macOS)
+```bash
+# Ver logs en tiempo real
+docker-compose logs -f
+
+# Ver estado de servicios
+docker-compose ps
+
+# Detener servicios
+./docker-stop.sh
+
+# Usar utilidades (backup, restore, etc)
+./docker-utils.sh
+```
+
+Para más detalles, ver [DOCKER.md](DOCKER.md)
+
+## 📁 Estructura del Proyecto
+
+```
+EntrenaSmart/
+├── backend/              # API FastAPI
+├── frontend/             # App React/Vite
+│
+├── docker-compose.yml    # Configuración de servicios
+├── Dockerfile            # Frontend
+├── Dockerfile.api        # Backend API
+├── Dockerfile.bot        # Bot de Telegram
+│
+├── Windows 11 (PowerShell & Batch)
+│   ├── setup.ps1         # Setup maestro (PowerShell)
+│   ├── setup.bat         # Setup maestro (Batch)
+│   ├── docker-start.ps1  # Iniciar servicios
+│   ├── docker-stop.ps1   # Detener servicios
+│   └── docker-utils.ps1  # Utilidades Docker
+│
+├── Linux/macOS (Bash)
+│   ├── setup.sh          # Setup maestro
+│   ├── docker-start.sh   # Iniciar servicios
+│   ├── docker-stop.sh    # Detener servicios
+│   └── docker-utils.sh   # Utilidades Docker
+│
+├── .env.docker           # Template de variables
+├── DOCKER.md             # Documentación Docker
+└── README.md             # Este archivo
+```
+
+## 🔧 Configuración
+
+El archivo `.env.docker` contiene:
+- Credenciales de PostgreSQL
+- URLs de base de datos
+- CORS origins
+- Tokens de Telegram (opcional)
+
+Para cambiar valores, edita `.env` después del primer setup.
+
+## 📚 Documentación Completa
+
+- **[WINDOWS.md](WINDOWS.md)** - Guía completa para Windows 11 (PowerShell, Batch, troubleshooting)
+- **[DOCKER.md](DOCKER.md)** - Guía completa de Docker, operaciones, troubleshooting
 
 ## 🔐 Seguridad
 
-- ✅ Validación de entrada
-- ✅ Prevención de SQL injection
-- ✅ Manejo seguro de tokens
-- ✅ Error handling robusto
+- ✅ Base de datos en contenedor aislado
+- ✅ Variables de entorno segregadas
+- ✅ Volúmenes Docker para persistencia
+- ✅ Health checks en todos los servicios
 
-## 📜 Licencia
+## 📝 Licencia
 
-MIT License - Ver LICENSE para detalles
-
-## 🎯 Roadmap
-
-- **v1.1**: Mejoras en UI y más tipos de entrenamientos
-- **v2.0**: Web dashboard, API REST, PostgreSQL
-
-## 💬 Soporte
-
-Para reportar bugs o sugerir mejoras, abre un issue en GitHub.
+MIT License
 
 ---
 
 **Versión**: 1.0.0
-**Fecha**: 2025-11-15
-**Status**: ✅ Estable
-
-Hecho con ❤️ para la comunidad de fitness
+**Status**: ✅ Docker-Ready & Production-Focused
