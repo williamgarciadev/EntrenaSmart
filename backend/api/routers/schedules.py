@@ -3,7 +3,6 @@ Router de programación de envíos automáticos.
 
 Endpoints para crear, actualizar y listar programaciones de envío
 de mensajes a estudiantes en horarios específicos.
-Persiste datos en PostgreSQL a través de ScheduleService.
 """
 from fastapi import APIRouter, HTTPException, status, Depends
 from datetime import datetime
@@ -16,9 +15,9 @@ from ..schemas import (
 )
 from ..dependencies import get_current_trainer
 from ..logger import logger
-from backend.src.models.base import get_db_context
-from backend.src.services.schedule_service import ScheduleService
-from backend.src.core.exceptions import (
+from src.models.base import get_db_context
+from src.services.message_schedule_service import MessageScheduleService
+from src.core.exceptions import (
     ValidationError,
     DuplicateRecordError,
     RecordNotFoundError
@@ -42,7 +41,7 @@ async def list_schedules(
 
     try:
         with get_db_context() as db:
-            service = ScheduleService(db)
+            service = MessageScheduleService(db)
             db_schedules = service.list_all_schedules(active_only=active_only)
 
         # Convertir objetos ORM a response models
@@ -89,14 +88,8 @@ async def get_schedule(
     """
     try:
         with get_db_context() as db:
-            service = ScheduleService(db)
-            schedule = service.get_schedule_by_id(schedule_id)
-
-        if not schedule:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Programación {schedule_id} no encontrada"
-            )
+            service = MessageScheduleService(db)
+            schedule = service.get_schedule_by_id_or_fail(schedule_id)
 
         logger.info(f"Obtenida programación desde BD: {schedule_id}")
 
@@ -112,8 +105,12 @@ async def get_schedule(
             updated_at=schedule.updated_at
         )
 
-    except HTTPException:
-        raise
+    except RecordNotFoundError:
+        logger.warning(f"Programación {schedule_id} no encontrada en BD")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Programación {schedule_id} no encontrada"
+        )
     except Exception as e:
         logger.error(f"Error obteniendo programación {schedule_id}: {e}", exc_info=True)
         raise HTTPException(
@@ -135,7 +132,7 @@ async def create_schedule(
     """
     try:
         with get_db_context() as db:
-            service = ScheduleService(db)
+            service = MessageScheduleService(db)
             new_schedule = service.create_schedule(
                 template_id=schedule.template_id,
                 student_id=schedule.student_id,
@@ -144,7 +141,6 @@ async def create_schedule(
                 days_of_week=schedule.days_of_week,
                 is_active=schedule.is_active
             )
-            # Auto-commit al salir del contexto
 
         logger.info(f"✅ Programación creada en BD: {new_schedule.id}")
 
@@ -195,8 +191,8 @@ async def update_schedule(
     """
     try:
         with get_db_context() as db:
-            service = ScheduleService(db)
-            updated_schedule = service.update_schedule(
+            service = MessageScheduleService(db)
+            schedule = service.update_schedule(
                 schedule_id=schedule_id,
                 template_id=schedule_update.template_id,
                 student_id=schedule_update.student_id,
@@ -205,20 +201,19 @@ async def update_schedule(
                 days_of_week=schedule_update.days_of_week,
                 is_active=schedule_update.is_active
             )
-            # Auto-commit al salir del contexto
 
-        logger.info(f"✅ Programación actualizada en BD: {schedule_id}")
+        logger.info(f"✅ Programación actualizada en BD: {schedule.id}")
 
         return MessageScheduleResponse(
-            id=updated_schedule.id,
-            template_id=updated_schedule.template_id,
-            student_id=updated_schedule.student_id,
-            hour=updated_schedule.hour,
-            minute=updated_schedule.minute,
-            days_of_week=updated_schedule.days_of_week,
-            is_active=updated_schedule.is_active,
-            created_at=updated_schedule.created_at,
-            updated_at=updated_schedule.updated_at
+            id=schedule.id,
+            template_id=schedule.template_id,
+            student_id=schedule.student_id,
+            hour=schedule.hour,
+            minute=schedule.minute,
+            days_of_week=schedule.days_of_week,
+            is_active=schedule.is_active,
+            created_at=schedule.created_at,
+            updated_at=schedule.updated_at
         )
 
     except RecordNotFoundError:
@@ -234,7 +229,7 @@ async def update_schedule(
             detail=str(e)
         )
     except Exception as e:
-        logger.error(f"Error actualizando programación {schedule_id}: {e}", exc_info=True)
+        logger.error(f"Error actualizando programación: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error al actualizar programación"
@@ -247,18 +242,17 @@ async def delete_schedule(
     trainer: dict = Depends(get_current_trainer)
 ):
     """
-    Eliminar una programación de la BD.
+    Eliminar (desactivar) una programación en la BD.
 
     Args:
         schedule_id: ID de la programación a eliminar
     """
     try:
         with get_db_context() as db:
-            service = ScheduleService(db)
-            service.delete_schedule(schedule_id)
-            # Auto-commit al salir del contexto
+            service = MessageScheduleService(db)
+            schedule = service.delete_schedule(schedule_id)
 
-        logger.info(f"✅ Programación eliminada de BD: {schedule_id}")
+        logger.info(f"✅ Programación eliminada en BD: {schedule_id}")
 
         return SuccessResponse(
             message=f"Programación {schedule_id} eliminada exitosamente"
@@ -271,7 +265,7 @@ async def delete_schedule(
             detail=f"Programación {schedule_id} no encontrada"
         )
     except Exception as e:
-        logger.error(f"Error eliminando programación {schedule_id}: {e}", exc_info=True)
+        logger.error(f"Error eliminando programación: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error al eliminar programación"
@@ -291,14 +285,8 @@ async def test_schedule(
     """
     try:
         with get_db_context() as db:
-            service = ScheduleService(db)
-            schedule = service.get_schedule_by_id(schedule_id)
-
-        if not schedule:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Programación {schedule_id} no encontrada"
-            )
+            service = MessageScheduleService(db)
+            schedule = service.get_schedule_by_id_or_fail(schedule_id)
 
         logger.info(f"Enviando mensaje de prueba: programación {schedule_id}")
 
@@ -310,8 +298,12 @@ async def test_schedule(
             "timestamp": datetime.now().isoformat()
         }
 
-    except HTTPException:
-        raise
+    except RecordNotFoundError:
+        logger.warning(f"Programación {schedule_id} no encontrada en BD")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Programación {schedule_id} no encontrada"
+        )
     except Exception as e:
         logger.error(f"Error enviando mensaje de prueba: {e}", exc_info=True)
         raise HTTPException(

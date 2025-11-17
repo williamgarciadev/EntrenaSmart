@@ -60,6 +60,13 @@ class Student(Base):
         lazy="select"
     )
 
+    message_schedules: Mapped[List["MessageSchedule"]] = relationship(
+        "MessageSchedule",
+        back_populates="student",
+        cascade="all, delete-orphan",
+        lazy="select"
+    )
+
     def __init__(
         self,
         name: str,

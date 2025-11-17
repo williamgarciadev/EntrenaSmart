@@ -1,13 +1,11 @@
 /**
- * API Client para EntrenaSmart Backend
- *
- * Proporciona funciones para interactuar con el backend API REST.
+ * API Types y configuración
  */
 
-const API_BASE_URL = '/api'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 // ============================================================================
-// Tipos e Interfaces
+// STUDENTS
 // ============================================================================
 
 export interface Student {
@@ -37,35 +35,68 @@ export interface StudentListResponse {
   total: number
 }
 
-export interface TrainingDayConfig {
-  id: number
-  weekday: number
-  weekday_name: string
-  session_type: string
-  location: string
-  is_active: boolean
-  created_at: string
-  updated_at: string
+export const studentsAPI = {
+  async listStudents(activeOnly = false): Promise<StudentListResponse> {
+    const url = `${API_BASE_URL}/api/students${activeOnly ? '?active_only=true' : ''}`
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+    if (!response.ok) throw new Error('Failed to fetch students')
+    return response.json()
+  },
+
+  async getStudent(id: number): Promise<Student> {
+    const response = await fetch(`${API_BASE_URL}/api/students/${id}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+    if (!response.ok) throw new Error('Failed to fetch student')
+    return response.json()
+  },
+
+  async createStudent(data: StudentCreate): Promise<Student> {
+    const response = await fetch(`${API_BASE_URL}/api/students`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify(data)
+    })
+    if (!response.ok) throw new Error('Failed to create student')
+    return response.json()
+  },
+
+  async updateStudent(id: number, data: StudentUpdate): Promise<Student> {
+    const response = await fetch(`${API_BASE_URL}/api/students/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify(data)
+    })
+    if (!response.ok) throw new Error('Failed to update student')
+    return response.json()
+  },
+
+  async deleteStudent(id: number): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/api/students/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+    if (!response.ok) throw new Error('Failed to delete student')
+  }
 }
 
-export interface TrainingDayConfigCreate {
-  weekday: number
-  weekday_name: string
-  session_type: string
-  location: string
-  is_active?: boolean
-}
-
-export interface WeeklyConfig {
-  configs: TrainingDayConfig[]
-}
+// ============================================================================
+// TEMPLATES
+// ============================================================================
 
 export interface Template {
   id: number
   name: string
   content: string
-  preview_content?: string
-  variables?: string[]
+  variables: string[]
   is_active: boolean
   created_at: string
   updated_at: string
@@ -74,12 +105,14 @@ export interface Template {
 export interface TemplateCreate {
   name: string
   content: string
+  variables?: string[]
   is_active?: boolean
 }
 
 export interface TemplateUpdate {
   name?: string
   content?: string
+  variables?: string[]
   is_active?: boolean
 }
 
@@ -87,6 +120,76 @@ export interface TemplateListResponse {
   templates: Template[]
   total: number
 }
+
+export const templatesAPI = {
+  async listTemplates(activeOnly = false): Promise<TemplateListResponse> {
+    const url = `${API_BASE_URL}/api/templates${activeOnly ? '?active_only=true' : ''}`
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+    if (!response.ok) throw new Error('Failed to fetch templates')
+    return response.json()
+  },
+
+  async getTemplate(id: number): Promise<Template> {
+    const response = await fetch(`${API_BASE_URL}/api/templates/${id}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+    if (!response.ok) throw new Error('Failed to fetch template')
+    return response.json()
+  },
+
+  async createTemplate(data: TemplateCreate): Promise<Template> {
+    const response = await fetch(`${API_BASE_URL}/api/templates`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify(data)
+    })
+    if (!response.ok) throw new Error('Failed to create template')
+    return response.json()
+  },
+
+  async updateTemplate(id: number, data: TemplateUpdate): Promise<Template> {
+    const response = await fetch(`${API_BASE_URL}/api/templates/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify(data)
+    })
+    if (!response.ok) throw new Error('Failed to update template')
+    return response.json()
+  },
+
+  async deleteTemplate(id: number): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/api/templates/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+    if (!response.ok) throw new Error('Failed to delete template')
+  },
+
+  async previewTemplate(id: number, variables: Record<string, string>): Promise<{ preview_content: string }> {
+    const response = await fetch(`${API_BASE_URL}/api/templates/${id}/preview`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({ variables })
+    })
+    if (!response.ok) throw new Error('Failed to preview template')
+    return response.json()
+  }
+}
+
+// ============================================================================
+// MESSAGE SCHEDULES
+// ============================================================================
 
 export interface MessageSchedule {
   id: number
@@ -123,180 +226,130 @@ export interface MessageScheduleListResponse {
   total: number
 }
 
-// ============================================================================
-// Utilidades HTTP
-// ============================================================================
-
-async function fetchAPI<T>(
-  endpoint: string,
-  options?: RequestInit
-): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-  })
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Error desconocido' }))
-    throw new Error(error.detail || `HTTP ${response.status}`)
-  }
-
-  return response.json()
-}
-
-// ============================================================================
-// Students API
-// ============================================================================
-
-export const studentsAPI = {
-  listStudents: async (activeOnly = false): Promise<StudentListResponse> => {
-    return fetchAPI<StudentListResponse>(`/students?active_only=${activeOnly}`)
+export const schedulesAPI = {
+  async listSchedules(activeOnly = false): Promise<MessageScheduleListResponse> {
+    const url = `${API_BASE_URL}/api/schedules${activeOnly ? '?active_only=true' : ''}`
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+    if (!response.ok) throw new Error('Failed to fetch schedules')
+    return response.json()
   },
 
-  getStudent: async (studentId: number): Promise<Student> => {
-    return fetchAPI<Student>(`/students/${studentId}`)
+  async getSchedule(id: number): Promise<MessageSchedule> {
+    const response = await fetch(`${API_BASE_URL}/api/schedules/${id}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+    if (!response.ok) throw new Error('Failed to fetch schedule')
+    return response.json()
   },
 
-  createStudent: async (data: StudentCreate): Promise<Student> => {
-    return fetchAPI<Student>('/students', {
+  async createSchedule(data: MessageScheduleCreate): Promise<MessageSchedule> {
+    const response = await fetch(`${API_BASE_URL}/api/schedules`, {
       method: 'POST',
-      body: JSON.stringify(data),
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify(data)
     })
+    if (!response.ok) throw new Error('Failed to create schedule')
+    return response.json()
   },
 
-  updateStudent: async (studentId: number, data: StudentUpdate): Promise<Student> => {
-    return fetchAPI<Student>(`/students/${studentId}`, {
+  async updateSchedule(id: number, data: MessageScheduleUpdate): Promise<MessageSchedule> {
+    const response = await fetch(`${API_BASE_URL}/api/schedules/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(data),
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify(data)
     })
+    if (!response.ok) throw new Error('Failed to update schedule')
+    return response.json()
   },
 
-  deleteStudent: async (studentId: number): Promise<{ message: string }> => {
-    return fetchAPI<{ message: string }>(`/students/${studentId}`, {
+  async deleteSchedule(id: number): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/api/schedules/${id}`, {
       method: 'DELETE',
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     })
+    if (!response.ok) throw new Error('Failed to delete schedule')
   },
+
+  async testSchedule(id: number): Promise<{ success: boolean; message: string }> {
+    const response = await fetch(`${API_BASE_URL}/api/schedules/${id}/test`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+    if (!response.ok) throw new Error('Failed to test schedule')
+    return response.json()
+  }
 }
 
 // ============================================================================
-// Training Config API
+// TRAINING CONFIG
 // ============================================================================
+
+export interface TrainingDayConfig {
+  id: number
+  weekday: number
+  weekday_name: string
+  session_type: string
+  location: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface TrainingDayConfigCreate {
+  weekday: number
+  weekday_name: string
+  session_type: string
+  location: string
+}
+
+export interface WeeklyConfig {
+  configs: TrainingDayConfig[]
+  message: string
+}
 
 export const trainingConfigAPI = {
-  getWeeklyConfig: async (): Promise<WeeklyConfig> => {
-    return fetchAPI<WeeklyConfig>('/training-config')
-  },
-
-  getDayConfig: async (weekday: number): Promise<TrainingDayConfig> => {
-    return fetchAPI<TrainingDayConfig>(`/training-config/${weekday}`)
-  },
-
-  updateDayConfig: async (
-    weekday: number,
-    data: Partial<TrainingDayConfigCreate>
-  ): Promise<{ message: string; data: any }> => {
-    return fetchAPI<{ message: string; data: any }>(`/training-config/${weekday}`, {
-      method: 'POST',
-      body: JSON.stringify(data),
+  async getWeeklyConfig(): Promise<WeeklyConfig> {
+    const response = await fetch(`${API_BASE_URL}/api/training-config/weekly`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     })
+    if (!response.ok) throw new Error('Failed to fetch weekly config')
+    return response.json()
   },
 
-  deleteDayConfig: async (weekday: number): Promise<{ message: string }> => {
-    return fetchAPI<{ message: string }>(`/training-config/${weekday}`, {
+  async getDayConfig(weekday: number): Promise<TrainingDayConfig> {
+    const response = await fetch(`${API_BASE_URL}/api/training-config/day/${weekday}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+    if (!response.ok) throw new Error('Failed to fetch day config')
+    return response.json()
+  },
+
+  async updateDayConfig(weekday: number, data: TrainingDayConfigCreate): Promise<TrainingDayConfig> {
+    const response = await fetch(`${API_BASE_URL}/api/training-config/day`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify(data)
+    })
+    if (!response.ok) throw new Error('Failed to update day config')
+    return response.json()
+  },
+
+  async deleteDayConfig(weekday: number): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/api/training-config/day/${weekday}`, {
       method: 'DELETE',
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     })
-  },
-}
-
-// ============================================================================
-// Templates API
-// ============================================================================
-
-export const templatesAPI = {
-  listTemplates: async (activeOnly = false): Promise<TemplateListResponse> => {
-    return fetchAPI<TemplateListResponse>(`/templates?active_only=${activeOnly}`)
-  },
-
-  getTemplate: async (templateId: number): Promise<Template> => {
-    return fetchAPI<Template>(`/templates/${templateId}`)
-  },
-
-  createTemplate: async (data: TemplateCreate): Promise<Template> => {
-    return fetchAPI<Template>('/templates', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
-  },
-
-  updateTemplate: async (templateId: number, data: TemplateUpdate): Promise<Template> => {
-    return fetchAPI<Template>(`/templates/${templateId}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    })
-  },
-
-  deleteTemplate: async (templateId: number): Promise<{ message: string }> => {
-    return fetchAPI<{ message: string }>(`/templates/${templateId}`, {
-      method: 'DELETE',
-    })
-  },
-
-  testTemplate: async (templateId: number): Promise<{ success: boolean; message: string }> => {
-    return fetchAPI<{ success: boolean; message: string }>(`/templates/${templateId}/test`, {
-      method: 'POST',
-    })
-  },
-
-  previewTemplate: async (templateId: number, data?: Record<string, any>): Promise<{ preview_content: string }> => {
-    return fetchAPI<{ preview_content: string }>(`/templates/${templateId}/preview`, {
-      method: 'POST',
-      body: JSON.stringify(data || {}),
-    })
-  },
-}
-
-// ============================================================================
-// Schedules API
-// ============================================================================
-
-export const schedulesAPI = {
-  listSchedules: async (activeOnly = false): Promise<MessageScheduleListResponse> => {
-    return fetchAPI<MessageScheduleListResponse>(`/schedules?active_only=${activeOnly}`)
-  },
-
-  getSchedule: async (scheduleId: number): Promise<MessageSchedule> => {
-    return fetchAPI<MessageSchedule>(`/schedules/${scheduleId}`)
-  },
-
-  createSchedule: async (data: MessageScheduleCreate): Promise<MessageSchedule> => {
-    return fetchAPI<MessageSchedule>('/schedules', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
-  },
-
-  updateSchedule: async (
-    scheduleId: number,
-    data: MessageScheduleUpdate
-  ): Promise<MessageSchedule> => {
-    return fetchAPI<MessageSchedule>(`/schedules/${scheduleId}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    })
-  },
-
-  deleteSchedule: async (scheduleId: number): Promise<{ message: string }> => {
-    return fetchAPI<{ message: string }>(`/schedules/${scheduleId}`, {
-      method: 'DELETE',
-    })
-  },
-
-  testSchedule: async (scheduleId: number): Promise<{ success: boolean; message: string }> => {
-    return fetchAPI<{ success: boolean; message: string }>(`/schedules/${scheduleId}/test`, {
-      method: 'POST',
-    })
-  },
+    if (!response.ok) throw new Error('Failed to delete day config')
+  }
 }

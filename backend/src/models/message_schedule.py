@@ -1,29 +1,26 @@
-# -*- coding: utf-8 -*-
 """
-Modelo de Programación de Mensajes
-===================================
+Modelo de Programación de Mensajes (MessageSchedule)
+=====================================================
 
-Define la entidad de programación automática de envío de mensajes
-en la base de datos.
+Define la entidad de programación de envío automático de mensajes.
 """
-from typing import List, Optional
-from sqlalchemy import ForeignKey, Integer, Boolean, ARRAY
-from sqlalchemy.orm import Mapped, mapped_column
-
-from backend.src.models.base import Base
+from typing import Optional, List
+from sqlalchemy import Integer, String, Boolean, ForeignKey, ARRAY
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from src.models.base import Base
 
 
 class MessageSchedule(Base):
     """
     Modelo de Programación de Mensajes.
 
-    Representa una programación para envío automático de mensajes
-    a estudiantes en horarios específicos de la semana.
+    Representa una programación de envío automático de mensajes
+    a estudiantes en horarios específicos.
     """
 
     __tablename__ = "message_schedules"
 
-    # Referencias
+    # Referencias a plantilla y estudiante
     template_id: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
@@ -33,37 +30,45 @@ class MessageSchedule(Base):
 
     student_id: Mapped[int] = mapped_column(
         Integer,
+        ForeignKey("students.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
         comment="ID del estudiante destinatario"
     )
 
-    # Configuración de horario
+    # Horario
     hour: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
-        comment="Hora del día (0-23)"
+        comment="Hora de envío (0-23)"
     )
 
     minute: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
-        comment="Minuto de la hora (0-59)"
+        comment="Minuto de envío (0-59)"
     )
 
+    # Días de la semana (0=lunes, 6=domingo)
     days_of_week: Mapped[List[int]] = mapped_column(
         ARRAY(Integer),
         nullable=False,
-        comment="Días de la semana (0=Lunes, 6=Domingo)"
+        comment="Días de semana para envío (0=lunes, 6=domingo)"
     )
 
     # Estado
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         default=True,
-        nullable=False,
         index=True,
         comment="Indica si la programación está activa"
+    )
+
+    # Relación con estudiante
+    student: Mapped["Student"] = relationship(
+        "Student",
+        back_populates="message_schedules",
+        lazy="select"
     )
 
     def __init__(
@@ -79,12 +84,12 @@ class MessageSchedule(Base):
         Inicializa una nueva programación de mensaje.
 
         Args:
-            template_id: ID de la plantilla
-            student_id: ID del estudiante
-            hour: Hora del día (0-23)
-            minute: Minuto (0-59)
-            days_of_week: Lista de días de la semana
-            is_active: Si está activa
+            template_id: ID de la plantilla de mensaje
+            student_id: ID del estudiante destinatario
+            hour: Hora de envío (0-23)
+            minute: Minuto de envío (0-59)
+            days_of_week: Lista de días de semana (0=lunes, 6=domingo)
+            is_active: Si la programación está activa (default: True)
         """
         self.template_id = template_id
         self.student_id = student_id
@@ -101,20 +106,10 @@ class MessageSchedule(Base):
         """Activa la programación."""
         self.is_active = True
 
-    @property
-    def time_str(self) -> str:
-        """
-        Retorna el horario en formato HH:MM.
-
-        Returns:
-            str: Horario formateado
-        """
-        return f"{self.hour:02d}:{self.minute:02d}"
-
     def __str__(self) -> str:
         """Representación en string de la programación."""
         return (
-            f"MessageSchedule(id={self.id}, template_id={self.template_id}, "
-            f"student_id={self.student_id}, time={self.time_str}, "
-            f"days={len(self.days_of_week)})"
+            f"MessageSchedule(id={self.id}, template={self.template_id}, "
+            f"student={self.student_id}, time={self.hour:02d}:{self.minute:02d}, "
+            f"active={self.is_active})"
         )

@@ -11,13 +11,15 @@ export const studentSchema = z.object({
       /^[a-zA-ZáéíóúñÁÉÍÓÚÑ\s]+$/,
       'El nombre solo puede contener letras y espacios'
     ),
-
+  
   telegram_username: z.string()
     .max(50, 'El username no puede exceder 50 caracteres')
     .regex(
       /^@?[a-zA-Z0-9_]*$/,
       'Username inválido. Solo letras, números y guiones bajos'
-    ),
+    )
+    .optional()
+    .or(z.literal('')),
 
   is_active: z.boolean(),
 })
