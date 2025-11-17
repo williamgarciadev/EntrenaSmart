@@ -18,6 +18,7 @@ from backend.src.repositories.student_repository import StudentRepository
 from backend.src.repositories.training_repository import TrainingRepository
 from backend.src.repositories.feedback_repository import FeedbackRepository
 from backend.src.repositories.config_training_repository import ConfigTrainingRepository
+from backend.src.repositories.weekly_reminder_repository import WeeklyReminderRepository
 
 __all__ = [
     "BaseRepository",
@@ -25,5 +26,6 @@ __all__ = [
     "TrainingRepository",
     "FeedbackRepository",
     "ConfigTrainingRepository",
+    "WeeklyReminderRepository",
 ]
 

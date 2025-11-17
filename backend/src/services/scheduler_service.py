@@ -183,6 +183,7 @@ class SchedulerService:
         Arranca el scheduler para procesar jobs.
 
         Debe llamarse después de `initialize_scheduler()`.
+        Programa automáticamente el recordatorio semanal del entrenador.
         """
         if self.scheduler is None:
             raise RuntimeError("Scheduler no inicializado. Llama initialize_scheduler() primero.")
@@ -190,6 +191,10 @@ class SchedulerService:
         try:
             self.scheduler.start()
             logger.info("Scheduler iniciado correctamente")
+
+            # Programar recordatorio semanal del entrenador automáticamente
+            self.schedule_weekly_reminder()
+
         except Exception as e:
             logger.error(f"Error iniciando scheduler: {str(e)}", exc_info=True)
             raise
@@ -206,6 +211,104 @@ class SchedulerService:
                 logger.info("Scheduler detenido correctamente")
             except Exception as e:
                 logger.error(f"Error deteniendo scheduler: {str(e)}", exc_info=True)
+
+    def schedule_weekly_reminder(self) -> str:
+        """
+        Programa el recordatorio semanal del entrenador.
+
+        Lee la configuración de WeeklyReminderConfig de la BD y programa
+        el envío automático según el día y hora configurados.
+
+        Returns:
+            str: ID del job programado o cadena vacía si hay error
+        """
+        logger.info("📅 [WEEKLY_REMINDER] Programando recordatorio semanal del entrenador...")
+
+        if self.scheduler is None:
+            logger.error("❌ [WEEKLY_REMINDER] Scheduler no está inicializado")
+            return ""
+
+        try:
+            # Obtener configuración de BD
+            from backend.src.models.base import get_db
+            from backend.src.services.weekly_reminder_service import WeeklyReminderService
+
+            db = get_db()
+            try:
+                service = WeeklyReminderService(db)
+                config = service.get_or_create_config()
+
+                if not config:
+                    logger.warning("⚠️ [WEEKLY_REMINDER] No hay configuración de recordatorio semanal")
+                    return ""
+
+                if not config["is_active"]:
+                    logger.info("ℹ️ [WEEKLY_REMINDER] Recordatorio semanal está desactivado - no se programa")
+                    return ""
+
+                send_day = config["send_day"]
+                send_hour = config["send_hour"]
+                send_minute = config["send_minute"]
+
+                logger.info(f"📊 [WEEKLY_REMINDER] Configuración obtenida:")
+                logger.info(f"   - Día: {config['send_day_name']} ({send_day})")
+                logger.info(f"   - Hora: {send_hour:02d}:{send_minute:02d}")
+                logger.info(f"   - Modo: {'Lunes OFF' if config['is_monday_off'] else 'Semana Completa'}")
+
+            finally:
+                db.close()
+
+            # Crear ID único para el job
+            job_id = "weekly_reminder_trainer"
+
+            # Cancelar job anterior si existe
+            self._cancel_job(job_id)
+
+            # Mapeo de weekday a nombre de día
+            weekday_names = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+            trigger_day = weekday_names[send_day]
+
+            # Importar tarea
+            from backend.src.services.tasks.weekly_reminder_task import WeeklyReminderTask
+
+            # Programar job semanal
+            self.scheduler.add_job(
+                WeeklyReminderTask.send_weekly_reminder_sync,
+                trigger=CronTrigger(
+                    day_of_week=trigger_day,
+                    hour=send_hour,
+                    minute=send_minute,
+                    timezone=self.timezone
+                ),
+                id=job_id,
+                name="Recordatorio Semanal del Entrenador",
+                replace_existing=True,
+                misfire_grace_time=300  # Ejecutar si pasó hace <5 min
+            )
+
+            logger.info(
+                f"✅ [WEEKLY_REMINDER] Recordatorio semanal programado: "
+                f"{trigger_day} {send_hour:02d}:{send_minute:02d}"
+            )
+            return job_id
+
+        except Exception as e:
+            logger.error(
+                f"❌ [WEEKLY_REMINDER] Error programando recordatorio semanal: {str(e)}",
+                exc_info=True
+            )
+            return ""
+
+    def reschedule_weekly_reminder(self) -> bool:
+        """
+        Reprograma el recordatorio semanal con la configuración actualizada.
+
+        Returns:
+            bool: True si fue reprogramado exitosamente
+        """
+        logger.info("🔄 [WEEKLY_REMINDER] Reprogramando recordatorio semanal...")
+        job_id = self.schedule_weekly_reminder()
+        return bool(job_id)
 
     def schedule_training_reminder(
         self,

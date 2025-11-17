@@ -1,4 +1,4 @@
-import { Home, Settings, MessageSquare, Clock, Users } from 'lucide-react'
+import { Home, Settings, MessageSquare, Clock, Users, Bell } from 'lucide-react'
 import { useLocation } from 'wouter'
 import type { ReactNode } from 'react'
 
@@ -40,6 +40,11 @@ export function Sidebar({ isOpen }: SidebarProps) {
       href: '/students',
       label: 'Estudiantes',
       icon: <Users className="w-5 h-5" />,
+    },
+    {
+      href: '/weekly-reminder',
+      label: 'Recordatorio Semanal',
+      icon: <Bell className="w-5 h-5" />,
     },
   ]
 

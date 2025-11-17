@@ -6,12 +6,13 @@ import TemplatesPage from './pages/TemplatesPage'
 import SchedulesPage from './pages/SchedulesPage'
 import StudentsPage from './pages/StudentsPage'
 import LoginPage from './pages/LoginPage'
+import { WeeklyReminderPage } from './pages/WeeklyReminderPage'
 import { ToastProvider } from './components/Toast'
 import { Layout } from './components/Layout'
 import { AnimatedCard } from './components/AnimatedCard'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { AuthProvider } from './hooks/useAuth'
-import { Settings, MessageSquare, Clock, Users, Zap } from 'lucide-react'
+import { Settings, MessageSquare, Clock, Users, Zap, Bell } from 'lucide-react'
 import './App.css'
 
 // Crear cliente de query
@@ -46,6 +47,8 @@ function RouterContent() {
               return <SchedulesPage />
             case '/students':
               return <StudentsPage />
+            case '/weekly-reminder':
+              return <WeeklyReminderPage />
             case '/':
               return <HomePage />
             default:
@@ -101,6 +104,13 @@ function HomePage() {
       description: 'Administra los estudiantes inscritos',
       color: 'from-orange-500 to-orange-600',
     },
+    {
+      href: '/weekly-reminder',
+      label: 'Recordatorio Semanal',
+      icon: Bell,
+      description: 'Configura mensajes semanales automáticos',
+      color: 'from-pink-500 to-pink-600',
+    },
   ]
 
   return (
@@ -125,7 +135,7 @@ function HomePage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, staggerChildren: 0.1 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6"
         >
           {features.map((feature, index) => {
             const Icon = feature.icon
@@ -172,7 +182,7 @@ function HomePage() {
             className="grid grid-cols-1 md:grid-cols-3 gap-6"
           >
             {[
-              { value: '4', label: 'Módulos Principales', color: 'from-blue-500 to-blue-600' },
+              { value: '5', label: 'Módulos Principales', color: 'from-blue-500 to-blue-600' },
               { value: '100%', label: 'Funcional', color: 'from-green-500 to-green-600' },
               { value: 'Realtime', label: 'Actualizaciones', color: 'from-purple-500 to-purple-600' },
             ].map((stat, idx) => (

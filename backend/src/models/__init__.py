@@ -17,6 +17,7 @@ from backend.src.models.training_day_config import TrainingDayConfig
 from backend.src.models.feedback import Feedback
 from backend.src.models.message_schedule import MessageSchedule
 from backend.src.models.message_template import MessageTemplate
+from backend.src.models.weekly_reminder_config import WeeklyReminderConfig
 
 __all__ = [
     "Base",
@@ -30,5 +31,6 @@ __all__ = [
     "Feedback",
     "MessageSchedule",
     "MessageTemplate",
+    "WeeklyReminderConfig",
 ]
 

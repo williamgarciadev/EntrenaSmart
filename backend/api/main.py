@@ -13,7 +13,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from .routers import auth, training_config, templates, schedules, students
+from .routers import auth, training_config, templates, schedules, students, weekly_reminders
 from .middleware import verify_auth_header
 
 # Configuración CORS
@@ -55,7 +55,8 @@ async def lifespan(app: FastAPI):
         TrainingDayConfig,
         Feedback,
         MessageSchedule,
-        MessageTemplate
+        MessageTemplate,
+        WeeklyReminderConfig
     )
 
     # Inicializar base de datos
@@ -120,6 +121,7 @@ app.include_router(training_config.router, prefix="/api/training-config", tags=[
 app.include_router(templates.router, prefix="/api/templates", tags=["Templates"])
 app.include_router(schedules.router, prefix="/api/schedules", tags=["Schedules"])
 app.include_router(students.router, prefix="/api/students", tags=["Students"])
+app.include_router(weekly_reminders.router)
 
 
 # Manejador de errores global

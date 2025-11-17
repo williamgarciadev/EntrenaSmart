@@ -19,6 +19,7 @@ from backend.src.services.feedback_service import FeedbackService
 from backend.src.services.report_service import ReportService
 from backend.src.services.scheduler_service import SchedulerService
 from backend.src.services.config_training_service import ConfigTrainingService
+from backend.src.services.weekly_reminder_service import WeeklyReminderService
 
 __all__ = [
     "StudentService",
@@ -27,5 +28,6 @@ __all__ = [
     "ReportService",
     "SchedulerService",
     "ConfigTrainingService",
+    "WeeklyReminderService",
 ]
 
