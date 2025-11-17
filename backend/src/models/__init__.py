@@ -10,12 +10,12 @@ Este módulo contiene los modelos de base de datos:
 - Feedback: Modelo de feedback post-entrenamiento
 - MessageSchedule: Modelo de programación de mensajes
 """
-from src.models.base import Base, engine, SessionLocal, init_db, get_db
-from src.models.student import Student
-from src.models.training import Training
-from src.models.training_day_config import TrainingDayConfig
-from src.models.feedback import Feedback
-from src.models.message_schedule import MessageSchedule
+from backend.src.models.base import Base, engine, SessionLocal, init_db, get_db
+from backend.src.models.student import Student
+from backend.src.models.training import Training
+from backend.src.models.training_day_config import TrainingDayConfig
+from backend.src.models.feedback import Feedback
+from backend.src.models.message_schedule import MessageSchedule
 
 __all__ = [
     "Base",
