@@ -62,7 +62,7 @@ export function ConfigWeekCalendar() {
       <p className="text-gray-600">Configure los entrenamientos de cada día de la semana</p>
 
       <div className="space-y-3">
-        {weeklyConfig.configs.map((config: TrainingDayConfig) => (
+        {Object.values(weeklyConfig).map((config: TrainingDayConfig) => (
           <DayConfigRow
             key={config.weekday}
             config={config}

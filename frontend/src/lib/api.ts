@@ -44,7 +44,7 @@ export interface Student {
 export interface StudentCreate {
   name: string
   telegram_username?: string
-  is_active: boolean
+  is_active?: boolean
 }
 
 export interface StudentUpdate {
