@@ -41,7 +41,7 @@ export default function TemplatesPage() {
     setFormData({
       name: template.name,
       content: template.content,
-      variables: template.variables,
+      variables: template.variables || [],
     })
     setIsEditing(true)
   }
@@ -223,7 +223,7 @@ export default function TemplatesPage() {
                         <p className="text-sm text-muted-foreground mt-1 truncate">
                           {template.content}
                         </p>
-                        {template.variables.length > 0 && (
+                        {template.variables && template.variables.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2">
                             {template.variables.map((v) => (
                               <span
