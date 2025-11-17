@@ -1,287 +1,240 @@
-# Plan de Corrección: Persistencia de Datos en PostgreSQL
+# 📋 EntrenaSmart - Estado del Proyecto
 
-## 🔴 PROBLEMA IDENTIFICADO
+## 📊 RESUMEN EJECUTIVO
 
-**Ubicación**: `backend/api/routers/training_config.py` (líneas 19-29, 125-131, 165-171)
-
-**Síntoma**:
-- Frontend muestra datos correctamente
-- Base de datos PostgreSQL está vacía
-- Datos se pierden al reiniciar la aplicación
-
-**Causa Raíz**:
-El router usa un diccionario `MOCK_CONFIG` en memoria en lugar de conectarse a la base de datos real.
+**Versión**: 1.0.0
+**Última actualización**: 2025-11-16
+**Estado general**: 🟡 En desarrollo (80% funcional)
 
 ---
 
-## ✅ SOLUCIÓN
+## ✅ COMPLETADAS
 
-Conectar el router directamente a `ConfigTrainingService` que ya existe y está totalmente implementado.
+### 1️⃣ Captura correcta de `chat_id` del alumno
+**Status**: ✅ COMPLETADO
+**Commit**: `2841506`
+**Fecha**: 2025-11-16
 
-### Cambios Necesarios en `training_config.py`:
+#### Problema resuelto:
+- El registro de alumnos capturaba incorrectamente el `username` del entrenador
+- El `chat_id` se perdía entre el registro y el `/start`
+
+#### Soluciones implementadas:
+1. **`registration_handler.py`**:
+   - ❌ Eliminado: Captura de `user.username` (era del entrenador)
+   - ✅ Agregado: Registro sin `username` ni `chat_id`
+
+2. **`trainer_handlers.py` - Handler `/start`**:
+   - ✅ Captura automática del `chat_id` del alumno
+   - ✅ Validación si el alumno está registrado
+   - ✅ Mensajes personalizados según estado
+
+3. **`student_repository.py`**:
+   - ✅ Nuevo método: `update_chat_id(student_id, chat_id)`
+
+4. **`student_service.py`**:
+   - ✅ Nuevo método: `update_student_chat_id(student_id, chat_id)`
+
+#### Flujo ahora correcto:
+```
+1. Entrenador registra alumno
+   → BD: {name: "Juan", telegram_username: NULL, chat_id: NULL}
+
+2. Alumno hace /start
+   → Bot captura automáticamente: chat_id = 123456789
+
+3. BD se actualiza correctamente
+   → BD: {name: "Juan", telegram_username: NULL, chat_id: 123456789}
+```
+
+#### Validación:
+- ✅ BD con alumnos registrados correctamente (chat_id capturado)
+- ✅ Mensajes personalizados en `/start`
+- ✅ Logging completo de operaciones
+
+---
+
+## 🔄 EN PROGRESO / PENDIENTES
+
+### 2️⃣ Persistencia de configuración semanal en PostgreSQL
+**Status**: 🔴 PENDIENTE
+**Prioridad**: ALTA
+**Archivos afectados**: `backend/api/routers/training_config.py`
+
+#### Problema actual:
+- Router usa `MOCK_CONFIG` (diccionario en memoria)
+- Datos NO se guardan en la BD
+- Datos se pierden al reiniciar
+
+#### Plan de corrección:
+
+**Cambios necesarios en `training_config.py`:**
 
 1. **Eliminar MOCK_CONFIG** (líneas 19-29)
    - Diccionario temporal no será necesario
    - Toda persistencia se hará vía BD
 
-2. **Reemplazar `get_weekly_config()` endpoint (línea 32)**
-   - Usar `ConfigTrainingService.get_all_configs()`
-   - Consultar datos de BD en lugar de MOCK_CONFIG
-
-3. **Reemplazar `get_day_config()` endpoint (línea 63)**
-   - Usar `ConfigTrainingService.get_day_config(weekday)`
-   - Obtener un día específico de BD
-
-4. **Reemplazar `update_day_config()` endpoint (línea 97)**
-   - Usar `ConfigTrainingService.configure_day()`
-   - Guardar cambios en BD (PERSIST automáticamente)
-
-5. **Reemplazar `delete_day_config()` endpoint (línea 145)**
-   - Usar `ConfigTrainingService.delete_day_config()`
-   - Eliminar de BD correctamente
-
-### Pasos Específicos:
-
-#### Paso 1: Imports (línea 15 actual)
+2. **Agregar imports**:
 ```python
-# AGREGAR estas importaciones:
 from src.models.base import get_db_context
 from src.services.config_training_service import ConfigTrainingService
 from src.core.exceptions import RecordNotFoundError, ValidationError
 ```
 
-#### Paso 2: Eliminar MOCK_CONFIG (líneas 19-29)
-```python
-# ❌ ELIMINAR TODO ESTO:
-MOCK_CONFIG = {
-    0: {...},
-    1: {...},
-    # etc
-}
-```
+3. **Reemplazar endpoints**:
+   - `GET /training-config` → Consultar todos de BD
+   - `GET /training-config/{weekday}` → Consultar día específico de BD
+   - `POST /training-config/{weekday}` → Guardar en BD
+   - `DELETE /training-config/{weekday}` → Eliminar de BD
 
-#### Paso 3: GET /training-config (obtener semanal)
-**Cambio**: De leer MOCK_CONFIG → Consultar BD
-```python
-@router.get("", response_model=WeeklyConfigResponse)
-async def get_weekly_config(trainer: dict = Depends(get_current_trainer)):
-    """Obtener configuración semanal completa."""
-    logger.info("Obteniendo configuración semanal")
+4. **Usar ConfigTrainingService**:
+   - `service.get_all_configs()` - Obtener todos
+   - `service.get_day_config(weekday)` - Obtener uno
+   - `service.configure_day(weekday, type, location)` - Guardar
+   - `service.delete_day_config(weekday)` - Eliminar
 
-    with get_db_context() as db:
-        service = ConfigTrainingService(db)
-        configs = service.get_all_configs()
+#### Beneficios:
+- ✅ Datos persistentes en PostgreSQL
+- ✅ Coherencia entre frontend y BD
+- ✅ Durabilidad entre reinicios
+- ✅ Escalabilidad multi-usuario
 
-    # Convertir a response model
-    response_configs = [
-        TrainingDayConfigResponse(
-            id=config.id,
-            weekday=config.weekday,
-            weekday_name=config.weekday_name,
-            session_type=config.session_type,
-            location=config.location,
-            is_active=config.is_active,
-            created_at=config.created_at,
-            updated_at=config.updated_at
-        )
-        for config in configs
-    ]
+#### Validación post-implementación:
+```bash
+# 1. Guardar configuración desde UI
+# 2. Verificar en BD:
+psql -U postgres -d entrenasmart
+SELECT * FROM training_day_configs;
 
-    return WeeklyConfigResponse(configs=response_configs)
-```
-
-#### Paso 4: GET /training-config/{weekday} (obtener un día)
-**Cambio**: De leer MOCK_CONFIG → Consultar BD
-```python
-@router.get("/{weekday}", response_model=TrainingDayConfigResponse)
-async def get_day_config(
-    weekday: int,
-    trainer: dict = Depends(get_current_trainer)
-):
-    """Obtener configuración de un día específico."""
-    if not 0 <= weekday <= 6:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="El día debe estar entre 0 (Lunes) y 6 (Domingo)"
-        )
-
-    with get_db_context() as db:
-        service = ConfigTrainingService(db)
-        config = service.get_day_config(weekday)
-
-    if not config:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Configuración no encontrada para el día {weekday}"
-        )
-
-    return TrainingDayConfigResponse(
-        id=config.id,
-        weekday=config.weekday,
-        weekday_name=config.weekday_name,
-        session_type=config.session_type,
-        location=config.location,
-        is_active=config.is_active,
-        created_at=config.created_at,
-        updated_at=config.updated_at
-    )
-```
-
-#### Paso 5: POST /training-config/{weekday} (actualizar/crear)
-**Cambio**: De guardar en MOCK_CONFIG → Persistir en BD
-```python
-@router.post("/{weekday}", response_model=SuccessResponse)
-async def update_day_config(
-    weekday: int,
-    config: TrainingDayConfigCreate,
-    trainer: dict = Depends(get_current_trainer)
-):
-    """Actualizar configuración de un día específico."""
-    if not 0 <= weekday <= 6:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="El día debe estar entre 0 (Lunes) y 6 (Domingo)"
-        )
-
-    # Validar tipos de entrenamiento permitidos
-    VALID_TYPES = ["Pierna", "Funcional", "Brazo", "Espalda", "Pecho", "Hombros"]
-    if config.session_type and config.session_type not in VALID_TYPES:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Tipo de entrenamiento inválido. Debe ser uno de: {', '.join(VALID_TYPES)}"
-        )
-
-    try:
-        with get_db_context() as db:
-            service = ConfigTrainingService(db)
-            config_obj = service.configure_day(
-                weekday=weekday,
-                session_type=config.session_type,
-                location=config.location
-            )
-            # Auto-commit al salir del contexto
-
-        logger.info(f"Configuración actualizada para el día {config.weekday_name}")
-
-        return SuccessResponse(
-            message=f"Configuración actualizada para {config.weekday_name}",
-            data={
-                "weekday": weekday,
-                "session_type": config.session_type,
-                "location": config.location
-            }
-        )
-    except ValidationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
-    except Exception as e:
-        logger.error(f"Error actualizando configuración: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error al actualizar configuración"
-        )
-```
-
-#### Paso 6: DELETE /training-config/{weekday} (eliminar)
-**Cambio**: De limpiar en MOCK_CONFIG → Eliminar de BD
-```python
-@router.delete("/{weekday}", response_model=SuccessResponse)
-async def delete_day_config(
-    weekday: int,
-    trainer: dict = Depends(get_current_trainer)
-):
-    """Eliminar configuración de un día específico."""
-    if not 0 <= weekday <= 6:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="El día debe estar entre 0 (Lunes) y 6 (Domingo)"
-        )
-
-    day_names = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
-    day_name = day_names[weekday]
-
-    try:
-        with get_db_context() as db:
-            service = ConfigTrainingService(db)
-            service.delete_day_config(weekday)
-            # Auto-commit al salir del contexto
-
-        logger.info(f"Configuración eliminada para {day_name}")
-
-        return SuccessResponse(
-            message=f"Configuración eliminada para {day_name}"
-        )
-    except RecordNotFoundError:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No hay configuración para {day_name}"
-        )
-    except Exception as e:
-        logger.error(f"Error eliminando configuración: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error al eliminar configuración"
-        )
+# 3. Reiniciar backend → Datos deben persistir
+# 4. GET endpoint debe devolver datos de BD
 ```
 
 ---
 
-## 📊 RESUMEN DE CAMBIOS
+## 📈 ESTADÍSTICAS
 
-| Elemento | Antes | Después |
-|----------|-------|---------|
-| **Almacenamiento** | MOCK_CONFIG (memoria) | PostgreSQL (persistente) |
-| **GET semanal** | Lee MOCK_CONFIG dict | Consulta BD via servicio |
-| **GET un día** | Lee MOCK_CONFIG dict | Consulta BD via servicio |
-| **POST/UPDATE** | Modifica MOCK_CONFIG | Guarda en BD (auto-commit) |
-| **DELETE** | Limpia MOCK_CONFIG | Elimina de BD |
-| **Persistencia** | ❌ NO persiste | ✅ SI persiste |
-| **Durabilidad** | Datos se pierden al reiniciar | ✅ Datos permanecen |
-| **Código a cambiar** | ~180 líneas | ~15 líneas efectivas |
-| **Riesgo de regresión** | Bajo (API interface igual) | ✅ Bajo |
+| Métrica | Antes | Después |
+|---------|-------|---------|
+| **Alumnos registrados correctamente** | ❌ NO | ✅ SÍ |
+| **Chat_id capturado automáticamente** | ❌ NO | ✅ SÍ |
+| **Datos persistentes (Training Config)** | ❌ NO | 🔄 Pendiente |
+| **Líneas de código agregadas** | - | ~60 |
+| **Métodos nuevos** | - | 2 |
 
 ---
 
-## ✨ BENEFICIOS
+## 🧪 TESTING REALIZADO
 
-- ✅ **Datos persistentes** en PostgreSQL
-- ✅ **Coherencia** entre frontend y BD
-- ✅ **Durabilidad** entre reinicios
-- ✅ **Escalabilidad** para múltiples usuarios
-- ✅ **Auditoría** (created_at, updated_at automáticos)
-- ✅ **Transacciones ACID** garantizadas
-- ✅ **Código limpio** sin MOCK_CONFIG
+### ✅ Completado:
+- [x] Modelo Student con campos correctos
+- [x] Repositorio con métodos de actualización
+- [x] Servicio con lógica de negocio
+- [x] Handler `/start` capturando `chat_id`
+- [x] Logging de operaciones
+- [x] Manejo de excepciones
 
----
-
-## 🧪 VALIDACIÓN DESPUÉS DE CAMBIOS
-
-1. Guardar configuración desde UI → Verificar en BD
-   ```bash
-   psql -U postgres -d entrenasmart
-   SELECT * FROM training_day_configs;
-   ```
-
-2. Reiniciar backend → Datos deben persistir
-3. GET endpoint debe devolver datos de BD
-4. Eliminar desde UI → Debe desaparecer de BD
+### 🔄 Pendiente:
+- [ ] Tests unitarios para nuevos métodos
+- [ ] Tests de integración para flujo completo
+- [ ] Validación con múltiples alumnos
+- [ ] Testing de persistencia en BD real
 
 ---
 
-## 📝 NOTAS IMPORTANTES
+## 🔍 NOTAS IMPORTANTES
 
-- **No afecta otros routers** (students, templates, schedules)
-- **Compatible con frontend** (API interface no cambia)
-- **Rollback automático** si hay error (transacciones)
-- **Logging integrado** para auditoría
-- **Validación mantiene tipos permitidos**
+### Sobre la captura de chat_id:
+- El `chat_id` es el ID **único** de Telegram para cada usuario
+- Se captura automáticamente cuando el usuario hace `/start`
+- Es **diferente** del `username` de Telegram
+- No se puede cambiar, es único por usuario
+
+### Sobre la configuración semanal:
+- Actualmente usa un diccionario en memoria (perdido al reiniciar)
+- Necesita conectarse a la tabla `training_day_configs` de la BD
+- Ya existe `ConfigTrainingService` completamente implementado
+- Solo falta conectar el router al servicio
+
+### Sobre la arquitectura:
+```
+router → service → repository → ORM (SQLAlchemy) → BD (PostgreSQL)
+```
+
+Cada capa tiene responsabilidades claras:
+- **Router**: Validación HTTP, convertir requests/responses
+- **Service**: Lógica de negocio, transacciones
+- **Repository**: Acceso a datos, queries
+- **ORM**: Mapeo objeto-relacional
+- **BD**: Persistencia
 
 ---
 
-## 🚀 SIGUIENTE PASO
+## 📅 HISTORIAL DE CAMBIOS
 
-**Espera mi aprobación para empezar.**
+| Fecha | Commit | Descripción |
+|-------|--------|-------------|
+| 2025-11-16 | 2841506 | fix: Capturar chat_id correctamente en registro y /start |
+| 2025-11-16 | 0ec97fb | docs: Agregar guía de desarrollo local |
+| 2025-11-16 | 27503f5 | feat: FASE 1 y 2 - Setup Backend + Frontend + Docker |
 
-Iré reemplazando cada endpoint de forma **SIMPLE Y ENFOCADA** sin cambios masivos.
+---
+
+## 🚀 PRÓXIMOS PASOS
+
+### INMEDIATO (Esta sesión):
+1. [ ] Esperar aprobación para conectar `training_config.py` a BD
+2. [ ] Reemplazar 4 endpoints en `training_config.py`
+3. [ ] Validar persistencia en BD real
+4. [ ] Commit y push
+
+### CORTO PLAZO (Esta semana):
+1. [ ] Escribir tests unitarios para nuevos métodos
+2. [ ] Tests de integración para flujo completo
+3. [ ] Documentar cambios en README
+4. [ ] Code review de cambios
+
+### MEDIANO PLAZO (Esta semana):
+1. [ ] Implementar persistencia en otros routers (students, templates)
+2. [ ] Validar todos los endpoints contra BD real
+3. [ ] Testing con múltiples usuarios simultáneamente
+4. [ ] Optimizar queries a BD
+
+### LARGO PLAZO:
+1. [ ] Implementar migraciones de datos (Alembic)
+2. [ ] Configurar CI/CD pipeline
+3. [ ] Deployment a producción
+4. [ ] Monitoreo y observabilidad
+
+---
+
+## 💡 LECCIONES APRENDIDAS
+
+1. **Captura de datos del usuario**:
+   - Siempre usar `update.effective_user` para datos del usuario actual
+   - No confundir entrenador (quien registra) con alumno (quien es registrado)
+   - Telegram proporciona automáticamente `chat_id` en cada mensaje
+
+2. **Flujos de registro**:
+   - Es normal registrar datos incompletos (sin chat_id inicialmente)
+   - Los datos se completan cuando el usuario interactúa (primer `/start`)
+   - Usar campos `nullable` en BD para datos opcionales
+
+3. **Transacciones y persistencia**:
+   - Context managers (`with get_db_context()`) garantizan commit/rollback
+   - Los datos en memoria (diccionarios) se pierden al reiniciar
+   - Siempre perseguir datos en BD relacional
+
+---
+
+## 📞 CONTACTO / PREGUNTAS
+
+Para dudas o cambios al plan:
+- Revisar commit messages en GitHub
+- Verificar implementación en ramas correspondientes
+- Consultar documentación en `docs/`
+
+---
+
+**Última actualización**: 2025-11-16 14:30 UTC
+**Próxima revisión**: Tras implementar training_config.py
