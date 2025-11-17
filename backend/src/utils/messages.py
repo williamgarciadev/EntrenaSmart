@@ -238,32 +238,18 @@ class Messages:
         emoji = emoji_map.get(session_type, "✨")
 
         lines = [
-            f"🔔 <b>¡RECORDATORIO DE ENTRENAMIENTO!</b>",
+            f"{emoji} <b>¡Es hora de entrenar!</b>",
             "",
-            f"Hola hola espero que estés bien, recuerda nuestro entrenamiento el día de hoy.",
+            f"📅 <b>{training_time}</b> • 📍 <b>{location}</b>",
+            f"💪 <b>Sesión:</b> {session_type}",
             "",
-            f"Al llegar realizar un calentamiento de 5 minutos.",
+            "🔥 <b>Preparación:</b>",
+            "   • Llega 5 min antes",
+            "   • Calentamiento: 5 min en cinta (vel. 5.0)",
+            "   • Nos vemos en el lugar indicado",
             "",
-            f"Velocidad 5.0",
-            "",
-            f"Al terminar nos vemos en el {location.upper()} ({session_type.lower()}) para realizar nuestro entrenamiento. ✨",
-            "",
+            "¡Vamos con todo! 💪✨",
         ]
-
-        if include_checklist:
-            lines.extend([
-                "<b>✅ Checklist pre-entrenamiento:</b>",
-                f"🕐 <b>Hora:</b> {training_time}",
-                f"📍 <b>Ubicación:</b> {location}",
-                f"💪 <b>Tipo:</b> {session_type}",
-                "",
-            ])
-
-        lines.extend([
-            "¡Nos vemos en 30 minutos! 💪",
-            "",
-            "Si necesitas cambios, usa /editar_sesion"
-        ])
 
         return "\n".join(lines)
 
