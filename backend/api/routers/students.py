@@ -16,9 +16,9 @@ from ..schemas import (
 )
 from ..dependencies import get_current_trainer
 from ..logger import logger
-from src.models.base import get_db_context
-from src.services.student_service import StudentService
-from src.core.exceptions import (
+from backend.src.models.base import get_db_context
+from backend.src.services.student_service import StudentService
+from backend.src.core.exceptions import (
     ValidationError,
     DuplicateRecordError,
     RecordNotFoundError

@@ -14,9 +14,9 @@ from ..schemas import (
 )
 from ..dependencies import get_current_trainer
 from ..logger import logger
-from src.models.base import get_db_context
-from src.services.config_training_service import ConfigTrainingService
-from src.core.exceptions import RecordNotFoundError, ValidationError
+from backend.src.models.base import get_db_context
+from backend.src.services.config_training_service import ConfigTrainingService
+from backend.src.core.exceptions import RecordNotFoundError, ValidationError
 
 router = APIRouter()
 
