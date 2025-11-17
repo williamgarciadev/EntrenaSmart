@@ -44,6 +44,12 @@ from backend.src.handlers.student_handlers import (
 )
 from backend.src.handlers.student_schedule_handler import mi_semana_command
 from backend.src.handlers.weekly_reminder_callback_handler import handle_weekly_reminder_callback
+from backend.src.handlers.weekly_config_handlers import (
+    handle_weekly_day_selection,
+    handle_weekly_time_selection,
+    handle_weekly_finish,
+    handle_weekly_back_to_days
+)
 
 
 # Tracking de conflictos para detectar loops de reintentos
@@ -288,6 +294,32 @@ def main() -> None:
         CallbackQueryHandler(
             handle_weekly_reminder_callback,
             pattern=r"^config_weekly_training$"
+        )
+    )
+
+    # Callbacks para configuración semanal guiada (botones)
+    application.add_handler(
+        CallbackQueryHandler(
+            handle_weekly_day_selection,
+            pattern=r"^wc_day_\d$"
+        )
+    )
+    application.add_handler(
+        CallbackQueryHandler(
+            handle_weekly_time_selection,
+            pattern=r"^wc_time_\d{2}_\d{2}$"
+        )
+    )
+    application.add_handler(
+        CallbackQueryHandler(
+            handle_weekly_back_to_days,
+            pattern=r"^wc_back_to_days$"
+        )
+    )
+    application.add_handler(
+        CallbackQueryHandler(
+            handle_weekly_finish,
+            pattern=r"^wc_finish$"
         )
     )
 
