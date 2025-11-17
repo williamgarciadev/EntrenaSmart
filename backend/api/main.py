@@ -32,8 +32,15 @@ async def lifespan(app: FastAPI):
     print("[STARTUP] Inicializando base de datos...")
 
     # Importar init_db y todos los modelos para que se registren
-    from src.models.base import init_db
-    from src.models import Student, Training, TrainingDayConfig, Feedback, MessageSchedule
+    from backend.src.models.base import init_db
+    from backend.src.models import (
+        Student,
+        Training,
+        TrainingDayConfig,
+        Feedback,
+        MessageSchedule,
+        MessageTemplate  # ← NUEVO: Agregado para crear tabla message_templates
+    )
 
     # Inicializar base de datos
     init_db()
