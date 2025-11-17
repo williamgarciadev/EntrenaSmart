@@ -89,3 +89,20 @@ class StudentRepository(BaseRepository[Student]):
             student.name = new_name
             self.update(student)
         return student
+
+    def update_chat_id(self, student_id: int, chat_id: int) -> Student:
+        """
+        Actualiza el chat_id de un alumno.
+
+        Args:
+            student_id: ID del alumno
+            chat_id: Nuevo chat_id de Telegram
+
+        Returns:
+            Student: Alumno actualizado
+        """
+        student = self.get_by_id(student_id)
+        if student:
+            student.chat_id = chat_id
+            self.update(student)
+        return student

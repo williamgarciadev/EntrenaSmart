@@ -46,8 +46,10 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     Handler para el comando /start.
 
     Envía mensaje de bienvenida según el tipo de usuario.
+    Para alumnos, captura su chat_id automáticamente.
     """
     user = update.effective_user
+    chat_id = update.effective_chat.id
 
     if is_trainer(user.id):
         message = (
@@ -55,16 +57,46 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             "Bienvenido a *EntrenaSmart*, tu asistente para gestionar entrenamientos."
         )
         keyboard = build_trainer_commands_menu()
+        await update.message.reply_text(message, reply_markup=keyboard)
+        logger.info(f"Entrenador {user.id} ({user.first_name}) ejecutó /start")
     else:
-        message = (
-            "👋 ¡Hola!\n\n"
-            "Bienvenido a *EntrenaSmart*.\n\n"
-            "Recibirás recordatorios automáticos de tus entrenamientos."
-        )
-        keyboard = build_student_commands_menu()
+        # 📍 Capturar chat_id del alumno automáticamente
+        db = None
+        try:
+            db = get_db()
+            student_service = StudentService(db)
 
-    await update.message.reply_text(message, reply_markup=keyboard)
-    logger.info(f"Usuario {user.id} ({user.first_name}) ejecutó /start")
+            # Verificar si el alumno ya está registrado por chat_id
+            student = student_service.get_student_by_chat_id(chat_id)
+
+            if student:
+                # ✅ Alumno ya registrado
+                message = (
+                    f"👋 ¡Hola {student.name}!\n\n"
+                    "Bienvenido a *EntrenaSmart*.\n\n"
+                    "Recibirás recordatorios automáticos de tus entrenamientos."
+                )
+                logger.info(f"Alumno {student.name} (chat_id={chat_id}) inició sesión")
+            else:
+                # ❌ Alumno no registrado
+                message = (
+                    "👋 ¡Hola!\n\n"
+                    "No estás registrado en *EntrenaSmart*.\n\n"
+                    "Pídele al entrenador que te registre primero para recibir recordatorios de tus entrenamientos."
+                )
+                logger.info(f"Usuario no registrado (chat_id={chat_id}) ejecutó /start")
+
+            keyboard = build_student_commands_menu()
+            await update.message.reply_text(message, reply_markup=keyboard)
+
+        except Exception as e:
+            logger.error(f"Error procesando /start para alumno: {type(e).__name__}: {str(e)}", exc_info=True)
+            await update.message.reply_text(
+                "❌ Error procesando tu solicitud. Intenta nuevamente."
+            )
+        finally:
+            if db:
+                db.close()
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

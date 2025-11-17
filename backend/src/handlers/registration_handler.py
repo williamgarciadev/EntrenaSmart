@@ -126,11 +126,12 @@ async def registrarme_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE
             db = get_db()
             student_service = StudentService(db)
 
-            # Registrar sin chat_id (se asignará cuando alumno inicie sesión)
-            logger.info(f"Llamando register_student con: name={name}, username={user.username}")
+            # Registrar sin chat_id ni username (se asignarán cuando alumno inicie sesión)
+            logger.info(f"Registrando alumno: name={name}")
             student = student_service.register_student(
                 name=name,
-                telegram_username=user.username
+                telegram_username=None,
+                chat_id=None
             )
 
             logger.info(f"✅ Alumno creado exitosamente: ID={student.id}, name={name}")

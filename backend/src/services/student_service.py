@@ -220,3 +220,22 @@ class StudentService:
         if not student.is_active:
             raise StudentNotActiveError(student_id)
 
+    def update_student_chat_id(self, student_id: int, chat_id: int) -> Student:
+        """
+        Actualiza el chat_id de un alumno.
+
+        Se utiliza cuando un alumno hace /start en el bot y ya está registrado
+        pero sin chat_id asignado.
+
+        Args:
+            student_id: ID del alumno
+            chat_id: ID del chat de Telegram
+
+        Returns:
+            Student: Alumno actualizado
+
+        Raises:
+            RecordNotFoundError: Si el alumno no existe
+        """
+        return self.repository.update_chat_id(student_id, chat_id)
+

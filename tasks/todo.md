@@ -1,248 +1,287 @@
-# Plan de Trabajo: EntrenaSmart - Bot de Telegram para Entrenadores
+# Plan de Corrección: Persistencia de Datos en PostgreSQL
 
-## 📝 Resumen
-Implementación de un bot de Telegram automatizado que ayuda a entrenadores personales a gestionar recordatorios de entrenamientos, recopilar feedback de alumnos y generar reportes semanales. El bot usará Python con python-telegram-bot, APScheduler para tareas programadas, y SQLite para persistencia de datos.
+## 🔴 PROBLEMA IDENTIFICADO
 
-## 🎯 Objetivos
-- [ ] Crear una estructura de proyecto profesional siguiendo principios SOLID y PEP 8
-- [ ] Implementar sistema de comandos para el entrenador (/nuevo_alumno, /set)
-- [ ] Automatizar recordatorios 30 minutos antes del entrenamiento
-- [ ] Recopilar feedback post-entrenamiento de los alumnos
-- [ ] Generar reportes semanales automáticos cada domingo
-- [ ] Preparar el proyecto para deployment con Docker
+**Ubicación**: `backend/api/routers/training_config.py` (líneas 19-29, 125-131, 165-171)
 
-## 📋 Tareas
+**Síntoma**:
+- Frontend muestra datos correctamente
+- Base de datos PostgreSQL está vacía
+- Datos se pierden al reiniciar la aplicación
 
-### Fase 1: Preparación y Estructura Base ✅
-- [x] 1.1 Crear estructura de directorios del proyecto
-  - src/ con subdirectorios: core/, models/, repositories/, services/, handlers/, utils/
-  - tests/ con subdirectorios: unit/, integration/
-  - storage/backups/ para datos locales y respaldos
-  - logs/ para archivos de log
-  - docs/ para documentación adicional
-  
-- [x] 1.2 Configurar archivos base del proyecto
-  - requirements.txt con dependencias de producción
-  - requirements-dev.txt con dependencias de desarrollo
-  - pyproject.toml para configuración de herramientas (black, isort, pytest, mypy, coverage)
-  - .env.example con template completo de variables de entorno
-  - .gitignore configurado para Python, IDEs, OS, y archivos del proyecto
-  
-- [x] 1.3 Crear archivos __init__.py en todos los paquetes Python
-  - src/ y todos sus subdirectorios
-  - tests/ y subdirectorios
-  - Documentación inline en cada __init__.py
-  
-- [x] 1.4 Crear documentación inicial
-  - docs/architecture.md - Arquitectura del proyecto
-  - docs/database-schema.md - Esquema de base de datos
-  - tests/conftest.py - Fixtures de pytest
+**Causa Raíz**:
+El router usa un diccionario `MOCK_CONFIG` en memoria en lugar de conectarse a la base de datos real.
 
-### Fase 2: Configuración y Base de Datos ✅
-- [x] 2.1 Implementar configuración centralizada
-  - src/core/config.py con Pydantic Settings
-  - src/core/exceptions.py con excepciones personalizadas
-  - src/core/constants.py con constantes del proyecto
-  
-- [x] 2.2 Crear modelos de base de datos
-  - src/models/base.py - Configuración base SQLAlchemy
-  - src/models/student.py - Modelo de Alumno
-  - src/models/training.py - Modelo de Entrenamiento
-  - src/models/feedback.py - Modelo de Feedback
-  
-- [x] 2.3 Implementar repositorios (patrón Repository)
-  - src/repositories/base_repository.py - Repositorio base genérico
-  - src/repositories/student_repository.py - Operaciones de alumnos
-  - src/repositories/training_repository.py - Operaciones de entrenamientos
-  - src/repositories/feedback_repository.py - Operaciones de feedback
+---
 
-### Fase 3: Servicios de Negocio ✅
-- [x] 3.1 Implementar servicio de gestión de alumnos
-  - src/services/student_service.py
-  - Lógica para crear/actualizar/eliminar alumnos
-  - Validaciones de negocio
-  
-- [x] 3.2 Implementar servicio de entrenamientos
-  - src/services/training_service.py
-  - Configuración de semana de entrenamientos
-  - Validación de horarios y duplicados
-  
-- [x] 3.3 Implementar servicio de feedback
-  - src/services/feedback_service.py
-  - Registro de feedback post-entrenamiento
-  - Cálculo de estadísticas
-  
-- [x] 3.4 Implementar servicio de reportes
-  - src/services/report_service.py
-  - Generación de reportes semanales
-  - Formateo de mensajes de reporte
+## ✅ SOLUCIÓN
 
-### Fase 4: Sistema de Recordatorios ✅
-- [x] 4.1 Implementar servicio de scheduler
-  - src/services/scheduler_service.py
-  - Configuración de APScheduler con SQLite jobstore
-  - Manejo de zona horaria
-  
-- [x] 4.2 Implementar tareas programadas
-  - src/services/tasks/reminder_task.py - Recordatorios pre-entrenamiento
-  - src/services/tasks/feedback_task.py - Solicitud de feedback
-  - src/services/tasks/report_task.py - Generación de reportes semanales
-  
-- [x] 4.3 Integrar scheduler con servicios de negocio
-  - Programar recordatorios al crear entrenamientos
-  - Cancelar tareas al modificar/eliminar entrenamientos
-  - Reportes semanales automáticos
+Conectar el router directamente a `ConfigTrainingService` que ya existe y está totalmente implementado.
 
-### Fase 5: Handlers del Bot de Telegram ✅
-- [x] 5.1 Implementar handlers del entrenador
-  - src/handlers/trainer_handlers.py
-  - /start - Mensaje de bienvenida
-  - /registrarme - Registrar nuevo alumno
-  - /set - Configurar entrenamiento
-  - /listar_alumnos - Listar alumnos
-  - /reporte - Solicitar reporte manual
-  - /help - Ayuda con comandos
-  
-- [x] 5.2 Implementar handlers de alumnos
-  - src/handlers/student_handlers.py
-  - /mis_sesiones - Ver entrenamientos
-  - Callbacks de feedback (intensidad, completitud)
-  - Manejo de respuestas de texto
-  
-- [x] 5.3 Implementar mensajes y templates
-  - src/utils/messages.py - Templates completos
-  
-- [x] 5.4 Implementar sistema de logging
-  - src/utils/logger.py - Configuración completa
-  - src/utils/messages.py
-  - Templates de recordatorios
-  - Templates de feedback
-  - Templates de reportes
+### Cambios Necesarios en `training_config.py`:
 
-### Fase 6: Punto de Entrada y Orquestación
-- [ ] 6.1 Implementar utilidades
-  - src/utils/logger.py - Configuración de logging
-  - src/utils/validators.py - Validadores comunes
-  - src/utils/formatters.py - Formateadores de fecha/hora
-  
-- [ ] 6.2 Crear punto de entrada principal
-  - main.py - Inicialización del bot
-  - Configuración de handlers
-  - Inicialización de scheduler
-  - Manejo de señales para shutdown limpio
+1. **Eliminar MOCK_CONFIG** (líneas 19-29)
+   - Diccionario temporal no será necesario
+   - Toda persistencia se hará vía BD
 
-### Fase 7: Testing
-- [ ] 7.1 Configurar entorno de testing
-  - tests/conftest.py con fixtures comunes
-  - Mock de Telegram Bot API
-  - Base de datos de prueba en memoria
-  
-- [ ] 7.2 Implementar tests unitarios
-  - tests/unit/test_services.py - Tests de servicios
-  - tests/unit/test_repositories.py - Tests de repositorios
-  - tests/unit/test_models.py - Tests de modelos
-  
-- [ ] 7.3 Implementar tests de integración
-  - tests/integration/test_handlers.py - Tests de handlers
-  - tests/integration/test_scheduler.py - Tests de scheduler
-  - tests/integration/test_workflow.py - Tests de flujo completo
+2. **Reemplazar `get_weekly_config()` endpoint (línea 32)**
+   - Usar `ConfigTrainingService.get_all_configs()`
+   - Consultar datos de BD en lugar de MOCK_CONFIG
 
-### Fase 8: Documentación
-- [x] 8.1 Actualizar README.md
-  - Descripción del proyecto
-  - Requisitos y dependencias
-  - Instrucciones de instalación
-  - Guía de uso (comandos del bot)
-  - Configuración de variables de entorno
-  - Guía completa para desarrollo con IA
-  
-- [ ] 8.2 Documentar arquitectura
-  - docs/architecture.md - Diagrama de arquitectura
-  - docs/database-schema.md - Esquema de base de datos
-  - docs/deployment.md - Guía de deployment
-  
-- [ ] 8.3 Documentar API del bot
-  - docs/bot-commands.md - Comandos disponibles
-  - docs/bot-flows.md - Flujos de conversación
+3. **Reemplazar `get_day_config()` endpoint (línea 63)**
+   - Usar `ConfigTrainingService.get_day_config(weekday)`
+   - Obtener un día específico de BD
 
-### Fase 9: Docker y Deployment
-- [ ] 9.1 Crear Dockerfile
-  - Imagen base Python 3.10-slim
-  - Multi-stage build para optimizar tamaño
-  - Configuración de usuario no-root
-  
-- [ ] 9.2 Crear docker-compose.yml
-  - Servicio del bot
-  - Volúmenes para persistencia
-  - Variables de entorno
-  
-- [ ] 9.3 Preparar scripts de deployment
-  - scripts/start.sh - Iniciar bot
-  - scripts/stop.sh - Detener bot
-  - scripts/backup.sh - Backup de base de datos
+4. **Reemplazar `update_day_config()` endpoint (línea 97)**
+   - Usar `ConfigTrainingService.configure_day()`
+   - Guardar cambios en BD (PERSIST automáticamente)
 
-### Fase 10: Revisión Final y Optimización
-- [ ] 10.1 Realizar limpieza de código
-  - Ejecutar black para formateo
-  - Ejecutar isort para ordenar imports
-  - Ejecutar flake8 para linting
-  - Ejecutar mypy para verificar tipos
-  
-- [ ] 10.2 Verificar seguridad
-  - Ejecutar bandit para análisis de seguridad
-  - Validar que no hay secretos en el código
-  - Verificar manejo de errores y excepciones
-  
-- [ ] 10.3 Optimizar rendimiento
-  - Revisar queries a base de datos
-  - Optimizar carga de módulos
-  - Verificar manejo de memoria
+5. **Reemplazar `delete_day_config()` endpoint (línea 145)**
+   - Usar `ConfigTrainingService.delete_day_config()`
+   - Eliminar de BD correctamente
 
-## 🔍 Consideraciones Técnicas Importantes
+### Pasos Específicos:
 
-### 1. Librería de Telegram
-**Decisión:** Usar `python-telegram-bot` v20+ 
-- Más estable y documentado
-- Soporte para async/await
-- Comunidad más grande
-- Mejor para MVP
+#### Paso 1: Imports (línea 15 actual)
+```python
+# AGREGAR estas importaciones:
+from src.models.base import get_db_context
+from src.services.config_training_service import ConfigTrainingService
+from src.core.exceptions import RecordNotFoundError, ValidationError
+```
 
-### 2. Manejo de Zona Horaria
-**Decisión:** Usar hora local del entrenador
-- Almacenar timezone en configuración
-- Usar `zoneinfo` (built-in Python 3.9+)
-- Convertir todos los horarios a timezone configurado
+#### Paso 2: Eliminar MOCK_CONFIG (líneas 19-29)
+```python
+# ❌ ELIMINAR TODO ESTO:
+MOCK_CONFIG = {
+    0: {...},
+    1: {...},
+    # etc
+}
+```
 
-### 3. Persistencia de Tareas Programadas
-**Decisión:** Usar SQLite jobstore de APScheduler
-- Las tareas sobreviven reinicios del bot
-- Evita reprogramar en cada inicio
-- Sincronización automática con base de datos
+#### Paso 3: GET /training-config (obtener semanal)
+**Cambio**: De leer MOCK_CONFIG → Consultar BD
+```python
+@router.get("", response_model=WeeklyConfigResponse)
+async def get_weekly_config(trainer: dict = Depends(get_current_trainer)):
+    """Obtener configuración semanal completa."""
+    logger.info("Obteniendo configuración semanal")
 
-### 4. Autenticación del Entrenador
-**Decisión:** Validar por Telegram user_id
-- Configurar TRAINER_TELEGRAM_ID en variables de entorno
-- Decorator para validar permisos en comandos admin
-- Respuesta de error amigable para usuarios no autorizados
+    with get_db_context() as db:
+        service = ConfigTrainingService(db)
+        configs = service.get_all_configs()
 
-### 5. Gestión de Estados de Conversación
-**Decisión:** Usar ConversationHandler de python-telegram-bot
-- Para flujos multi-paso (ej: configurar semana completa)
-- Estados claros y manejables
-- Timeout para conversaciones inactivas
+    # Convertir a response model
+    response_configs = [
+        TrainingDayConfigResponse(
+            id=config.id,
+            weekday=config.weekday,
+            weekday_name=config.weekday_name,
+            session_type=config.session_type,
+            location=config.location,
+            is_active=config.is_active,
+            created_at=config.created_at,
+            updated_at=config.updated_at
+        )
+        for config in configs
+    ]
 
-## ✅ Revisión Final
-(Se completará al finalizar todas las tareas)
+    return WeeklyConfigResponse(configs=response_configs)
+```
 
-### Resumen de cambios realizados:
-- Por completar...
+#### Paso 4: GET /training-config/{weekday} (obtener un día)
+**Cambio**: De leer MOCK_CONFIG → Consultar BD
+```python
+@router.get("/{weekday}", response_model=TrainingDayConfigResponse)
+async def get_day_config(
+    weekday: int,
+    trainer: dict = Depends(get_current_trainer)
+):
+    """Obtener configuración de un día específico."""
+    if not 0 <= weekday <= 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El día debe estar entre 0 (Lunes) y 6 (Domingo)"
+        )
 
-### Archivos modificados:
-- Por completar...
+    with get_db_context() as db:
+        service = ConfigTrainingService(db)
+        config = service.get_day_config(weekday)
 
-### Funcionalidades agregadas:
-- Por completar...
+    if not config:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Configuración no encontrada para el día {weekday}"
+        )
 
-### Notas importantes:
-- Por completar...
+    return TrainingDayConfigResponse(
+        id=config.id,
+        weekday=config.weekday,
+        weekday_name=config.weekday_name,
+        session_type=config.session_type,
+        location=config.location,
+        is_active=config.is_active,
+        created_at=config.created_at,
+        updated_at=config.updated_at
+    )
+```
 
+#### Paso 5: POST /training-config/{weekday} (actualizar/crear)
+**Cambio**: De guardar en MOCK_CONFIG → Persistir en BD
+```python
+@router.post("/{weekday}", response_model=SuccessResponse)
+async def update_day_config(
+    weekday: int,
+    config: TrainingDayConfigCreate,
+    trainer: dict = Depends(get_current_trainer)
+):
+    """Actualizar configuración de un día específico."""
+    if not 0 <= weekday <= 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El día debe estar entre 0 (Lunes) y 6 (Domingo)"
+        )
+
+    # Validar tipos de entrenamiento permitidos
+    VALID_TYPES = ["Pierna", "Funcional", "Brazo", "Espalda", "Pecho", "Hombros"]
+    if config.session_type and config.session_type not in VALID_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Tipo de entrenamiento inválido. Debe ser uno de: {', '.join(VALID_TYPES)}"
+        )
+
+    try:
+        with get_db_context() as db:
+            service = ConfigTrainingService(db)
+            config_obj = service.configure_day(
+                weekday=weekday,
+                session_type=config.session_type,
+                location=config.location
+            )
+            # Auto-commit al salir del contexto
+
+        logger.info(f"Configuración actualizada para el día {config.weekday_name}")
+
+        return SuccessResponse(
+            message=f"Configuración actualizada para {config.weekday_name}",
+            data={
+                "weekday": weekday,
+                "session_type": config.session_type,
+                "location": config.location
+            }
+        )
+    except ValidationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"Error actualizando configuración: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al actualizar configuración"
+        )
+```
+
+#### Paso 6: DELETE /training-config/{weekday} (eliminar)
+**Cambio**: De limpiar en MOCK_CONFIG → Eliminar de BD
+```python
+@router.delete("/{weekday}", response_model=SuccessResponse)
+async def delete_day_config(
+    weekday: int,
+    trainer: dict = Depends(get_current_trainer)
+):
+    """Eliminar configuración de un día específico."""
+    if not 0 <= weekday <= 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El día debe estar entre 0 (Lunes) y 6 (Domingo)"
+        )
+
+    day_names = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+    day_name = day_names[weekday]
+
+    try:
+        with get_db_context() as db:
+            service = ConfigTrainingService(db)
+            service.delete_day_config(weekday)
+            # Auto-commit al salir del contexto
+
+        logger.info(f"Configuración eliminada para {day_name}")
+
+        return SuccessResponse(
+            message=f"Configuración eliminada para {day_name}"
+        )
+    except RecordNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No hay configuración para {day_name}"
+        )
+    except Exception as e:
+        logger.error(f"Error eliminando configuración: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al eliminar configuración"
+        )
+```
+
+---
+
+## 📊 RESUMEN DE CAMBIOS
+
+| Elemento | Antes | Después |
+|----------|-------|---------|
+| **Almacenamiento** | MOCK_CONFIG (memoria) | PostgreSQL (persistente) |
+| **GET semanal** | Lee MOCK_CONFIG dict | Consulta BD via servicio |
+| **GET un día** | Lee MOCK_CONFIG dict | Consulta BD via servicio |
+| **POST/UPDATE** | Modifica MOCK_CONFIG | Guarda en BD (auto-commit) |
+| **DELETE** | Limpia MOCK_CONFIG | Elimina de BD |
+| **Persistencia** | ❌ NO persiste | ✅ SI persiste |
+| **Durabilidad** | Datos se pierden al reiniciar | ✅ Datos permanecen |
+| **Código a cambiar** | ~180 líneas | ~15 líneas efectivas |
+| **Riesgo de regresión** | Bajo (API interface igual) | ✅ Bajo |
+
+---
+
+## ✨ BENEFICIOS
+
+- ✅ **Datos persistentes** en PostgreSQL
+- ✅ **Coherencia** entre frontend y BD
+- ✅ **Durabilidad** entre reinicios
+- ✅ **Escalabilidad** para múltiples usuarios
+- ✅ **Auditoría** (created_at, updated_at automáticos)
+- ✅ **Transacciones ACID** garantizadas
+- ✅ **Código limpio** sin MOCK_CONFIG
+
+---
+
+## 🧪 VALIDACIÓN DESPUÉS DE CAMBIOS
+
+1. Guardar configuración desde UI → Verificar en BD
+   ```bash
+   psql -U postgres -d entrenasmart
+   SELECT * FROM training_day_configs;
+   ```
+
+2. Reiniciar backend → Datos deben persistir
+3. GET endpoint debe devolver datos de BD
+4. Eliminar desde UI → Debe desaparecer de BD
+
+---
+
+## 📝 NOTAS IMPORTANTES
+
+- **No afecta otros routers** (students, templates, schedules)
+- **Compatible con frontend** (API interface no cambia)
+- **Rollback automático** si hay error (transacciones)
+- **Logging integrado** para auditoría
+- **Validación mantiene tipos permitidos**
+
+---
+
+## 🚀 SIGUIENTE PASO
+
+**Espera mi aprobación para empezar.**
+
+Iré reemplazando cada endpoint de forma **SIMPLE Y ENFOCADA** sin cambios masivos.
