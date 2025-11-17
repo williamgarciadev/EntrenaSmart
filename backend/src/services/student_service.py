@@ -82,6 +82,33 @@ class StudentService:
             telegram_username=telegram_username
         )
 
+    def get_student_by_id(self, student_id: int) -> Optional[Student]:
+        """
+        Obtiene un alumno por su ID (primary key).
+
+        Args:
+            student_id: ID del alumno
+
+        Returns:
+            Optional[Student]: Alumno encontrado o None
+        """
+        return self.repository.get_by_id(student_id)
+
+    def get_student_by_id_or_fail(self, student_id: int) -> Student:
+        """
+        Obtiene un alumno por su ID o lanza excepción.
+
+        Args:
+            student_id: ID del alumno
+
+        Returns:
+            Student: Alumno encontrado
+
+        Raises:
+            RecordNotFoundError: Si el alumno no existe
+        """
+        return self.repository.get_by_id_or_fail(student_id)
+
     def get_student_by_chat_id(self, chat_id: int) -> Optional[Student]:
         """
         Obtiene un alumno por su chat_id de Telegram.
