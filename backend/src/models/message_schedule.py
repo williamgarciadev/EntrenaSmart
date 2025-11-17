@@ -7,7 +7,7 @@ Define la entidad de programación de envío automático de mensajes.
 from typing import Optional, List
 from sqlalchemy import Integer, String, Boolean, ForeignKey, ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from src.models.base import Base
+from backend.src.models.base import Base
 
 
 class MessageSchedule(Base):
