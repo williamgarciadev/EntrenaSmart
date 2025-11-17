@@ -5,9 +5,12 @@ import { ConfigPage } from './pages/ConfigPage'
 import TemplatesPage from './pages/TemplatesPage'
 import SchedulesPage from './pages/SchedulesPage'
 import StudentsPage from './pages/StudentsPage'
+import LoginPage from './pages/LoginPage'
 import { ToastProvider } from './components/Toast'
 import { Layout } from './components/Layout'
 import { AnimatedCard } from './components/AnimatedCard'
+import { ProtectedRoute } from './components/ProtectedRoute'
+import { AuthProvider } from './hooks/useAuth'
 import { Settings, MessageSquare, Clock, Users, Zap } from 'lucide-react'
 import './App.css'
 
@@ -24,32 +27,46 @@ const queryClient = new QueryClient({
 function RouterContent() {
   const [location] = useLocation()
 
-  switch (location) {
-    case '/config':
-      return <ConfigPage />
-    case '/templates':
-      return <TemplatesPage />
-    case '/schedules':
-      return <SchedulesPage />
-    case '/students':
-      return <StudentsPage />
-    case '/':
-      return <HomePage />
-    default:
-      return <NotFound />
+  // Ruta de login sin protección
+  if (location === '/login') {
+    return <LoginPage />
   }
+
+  // Todas las demás rutas requieren autenticación
+  return (
+    <ProtectedRoute>
+      <Layout>
+        {(() => {
+          switch (location) {
+            case '/config':
+              return <ConfigPage />
+            case '/templates':
+              return <TemplatesPage />
+            case '/schedules':
+              return <SchedulesPage />
+            case '/students':
+              return <StudentsPage />
+            case '/':
+              return <HomePage />
+            default:
+              return <NotFound />
+          }
+        })()}
+      </Layout>
+    </ProtectedRoute>
+  )
 }
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ToastProvider>
-        <Router>
-          <Layout>
+      <AuthProvider>
+        <ToastProvider>
+          <Router>
             <RouterContent />
-          </Layout>
-        </Router>
-      </ToastProvider>
+          </Router>
+        </ToastProvider>
+      </AuthProvider>
     </QueryClientProvider>
   )
 }

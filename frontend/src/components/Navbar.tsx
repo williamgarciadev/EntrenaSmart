@@ -1,6 +1,8 @@
 import { Menu, X, LogOut, Zap } from 'lucide-react'
 import { useState } from 'react'
 import { motion } from 'framer-motion'
+import { useAuth } from '@/hooks/useAuth'
+import { useLocation } from 'wouter'
 
 interface NavbarProps {
   onMenuToggle: () => void
@@ -8,6 +10,14 @@ interface NavbarProps {
 }
 
 export function Navbar({ onMenuToggle, isMenuOpen }: NavbarProps) {
+  const { logout } = useAuth()
+  const [, setLocation] = useLocation()
+
+  const handleLogout = () => {
+    logout()
+    setLocation('/login')
+  }
+
   return (
     <motion.nav
       className="sticky top-0 z-40 glassmorphism border-b border-border/50 shadow-lg-soft"
@@ -66,9 +76,11 @@ export function Navbar({ onMenuToggle, isMenuOpen }: NavbarProps) {
             <p className="text-xs text-muted-foreground">Entrenador</p>
           </div>
           <motion.button
+            onClick={handleLogout}
             className="p-2 hover:bg-red-50 rounded-lg transition-colors-smooth text-destructive hover-lift"
             whileHover={{ scale: 1.1, rotate: 10 }}
             whileTap={{ scale: 0.9 }}
+            title="Cerrar sesión"
           >
             <LogOut className="w-5 h-5" />
           </motion.button>
