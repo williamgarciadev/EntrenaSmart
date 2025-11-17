@@ -12,8 +12,19 @@ The frontend was trying to connect to `http://localhost:8000/api/students` but g
 
 Use the provided startup script:
 
+**Linux/Mac:**
 ```bash
 ./start-backend.sh
+```
+
+**Windows (PowerShell):**
+```powershell
+.\start-backend.ps1
+```
+
+**Windows (CMD):**
+```cmd
+start-backend.bat
 ```
 
 This script will:
@@ -26,6 +37,8 @@ This script will:
 ### Manual Setup
 
 If you prefer to start the backend manually:
+
+#### Linux/Mac
 
 1. **Create the .env file** (if it doesn't exist):
    ```bash
@@ -51,6 +64,66 @@ If you prefer to start the backend manually:
 5. **Start the backend API server**:
    ```bash
    PYTHONPATH=backend:$PYTHONPATH python3 -m uvicorn backend.api.main:app --host 0.0.0.0 --port 8000 --reload
+   ```
+
+#### Windows (PowerShell)
+
+1. **Create the .env file** (if it doesn't exist):
+   ```powershell
+   Copy-Item .env.example .env
+   # Edit .env and set the required values
+   ```
+
+2. **Install Python dependencies**:
+   ```powershell
+   pip install -r requirements.txt
+   ```
+
+3. **Create required directories**:
+   ```powershell
+   New-Item -ItemType Directory -Force -Path storage, logs
+   ```
+
+4. **Initialize the database**:
+   ```powershell
+   $env:PYTHONPATH = "backend;$env:PYTHONPATH"
+   python -c "from src.models.base import init_db; init_db()"
+   ```
+
+5. **Start the backend API server**:
+   ```powershell
+   $env:PYTHONPATH = "backend;$env:PYTHONPATH"
+   python -m uvicorn backend.api.main:app --host 0.0.0.0 --port 8000 --reload
+   ```
+
+#### Windows (CMD)
+
+1. **Create the .env file** (if it doesn't exist):
+   ```cmd
+   copy .env.example .env
+   REM Edit .env and set the required values
+   ```
+
+2. **Install Python dependencies**:
+   ```cmd
+   pip install -r requirements.txt
+   ```
+
+3. **Create required directories**:
+   ```cmd
+   mkdir storage logs
+   ```
+
+4. **Initialize the database**:
+   ```cmd
+   set PYTHONPATH=backend;%PYTHONPATH%
+   python -c "from src.models.base import init_db; init_db()"
+   ```
+
+5. **Start the backend API server**:
+   ```cmd
+   set PYTHONPATH=backend;%PYTHONPATH%
+   python -m uvicorn backend.api.main:app --host 0.0.0.0 --port 8000 --reload
    ```
 
 ## Verification
