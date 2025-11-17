@@ -13,12 +13,12 @@ Servicios disponibles:
 - SchedulerService: Programación de tareas automáticas
 - ConfigTrainingService: Configuración semanal de entrenamientos
 """
-from src.services.student_service import StudentService
-from src.services.training_service import TrainingService
-from src.services.feedback_service import FeedbackService
-from src.services.report_service import ReportService
-from src.services.scheduler_service import SchedulerService
-from src.services.config_training_service import ConfigTrainingService
+from backend.src.services.student_service import StudentService
+from backend.src.services.training_service import TrainingService
+from backend.src.services.feedback_service import FeedbackService
+from backend.src.services.report_service import ReportService
+from backend.src.services.scheduler_service import SchedulerService
+from backend.src.services.config_training_service import ConfigTrainingService
 
 __all__ = [
     "StudentService",

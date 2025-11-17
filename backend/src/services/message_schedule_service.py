@@ -7,8 +7,8 @@ con programación de envío automático de mensajes.
 """
 from typing import List, Optional
 from sqlalchemy.orm import Session
-from src.models.message_schedule import MessageSchedule
-from src.core.exceptions import (
+from backend.src.models.message_schedule import MessageSchedule
+from backend.src.core.exceptions import (
     ValidationError,
     RecordNotFoundError,
     DuplicateRecordError
