@@ -18,12 +18,22 @@ if [ ! -f .env ]; then
 # Development configuration
 TELEGRAM_BOT_TOKEN=dev_token_placeholder
 TRAINER_TELEGRAM_ID=123456789
-DATABASE_PATH=storage/entrenasmart.db
+
+# PostgreSQL Database (usar PostgreSQL en lugar de SQLite)
+DATABASE_URL=postgresql://entrenasmart:entrenasmart123@localhost:5432/entrenasmart
+
+# API Configuration
 API_SECRET_KEY=dev-secret-key
 API_CORS_ORIGINS=http://localhost:5173
+
+# Logging
 LOG_LEVEL=INFO
 LOG_FILE=logs/bot.log
+
+# Timezone
 TIMEZONE=America/Bogota
+
+# Development mode
 DEBUG=true
 ENVIRONMENT=development
 EOF
@@ -34,15 +44,14 @@ fi
 echo -e "${YELLOW}Creating required directories...${NC}"
 mkdir -p storage logs
 
-# Initialize database if it doesn't exist
-if [ ! -f storage/entrenasmart.db ]; then
-    echo -e "${YELLOW}Initializing database...${NC}"
-    PYTHONPATH=backend:$PYTHONPATH python3 -c "from src.models.base import init_db; init_db()" || {
-        echo -e "${RED}Failed to initialize database${NC}"
-        exit 1
-    }
-    echo -e "${GREEN}Database initialized${NC}"
-fi
+# Initialize database tables
+echo -e "${YELLOW}Initializing PostgreSQL database tables...${NC}"
+PYTHONPATH=backend:$PYTHONPATH python3 -c "from src.models.base import init_db; init_db()" || {
+    echo -e "${RED}Failed to initialize database${NC}"
+    echo -e "${YELLOW}Make sure PostgreSQL is running and accessible on localhost:5432${NC}"
+    exit 1
+}
+echo -e "${GREEN}Database initialized${NC}"
 
 # Check if dependencies are installed
 python3 -c "import fastapi" 2>/dev/null || {

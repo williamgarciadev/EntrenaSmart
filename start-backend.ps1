@@ -10,12 +10,22 @@ if (-Not (Test-Path .env)) {
 # Development configuration
 TELEGRAM_BOT_TOKEN=dev_token_placeholder
 TRAINER_TELEGRAM_ID=123456789
-DATABASE_PATH=storage/entrenasmart.db
+
+# PostgreSQL Database (usar PostgreSQL en lugar de SQLite)
+DATABASE_URL=postgresql://entrenasmart:entrenasmart123@localhost:5432/entrenasmart
+
+# API Configuration
 API_SECRET_KEY=dev-secret-key
 API_CORS_ORIGINS=http://localhost:5173
+
+# Logging
 LOG_LEVEL=INFO
 LOG_FILE=logs/bot.log
+
+# Timezone
 TIMEZONE=America/Bogota
+
+# Development mode
 DEBUG=true
 ENVIRONMENT=development
 "@ | Out-File -FilePath .env -Encoding UTF8
@@ -28,17 +38,16 @@ Write-Host "Creando directorios requeridos..." -ForegroundColor Yellow
 New-Item -ItemType Directory -Force -Path storage | Out-Null
 New-Item -ItemType Directory -Force -Path logs | Out-Null
 
-# Initialize database if it doesn't exist
-if (-Not (Test-Path storage\entrenasmart.db)) {
-    Write-Host "Inicializando base de datos..." -ForegroundColor Yellow
-    $env:PYTHONPATH = "backend;$env:PYTHONPATH"
-    python -c "from src.models.base import init_db; init_db()"
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Error al inicializar la base de datos" -ForegroundColor Red
-        exit 1
-    }
-    Write-Host "Base de datos inicializada" -ForegroundColor Green
+# Initialize database tables
+Write-Host "Inicializando tablas de la base de datos PostgreSQL..." -ForegroundColor Yellow
+$env:PYTHONPATH = "backend;$env:PYTHONPATH"
+python -c "from src.models.base import init_db; init_db()"
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Error al inicializar la base de datos" -ForegroundColor Red
+    Write-Host "Asegurate de que PostgreSQL este corriendo y accesible en localhost:5432" -ForegroundColor Yellow
+    exit 1
 }
+Write-Host "Base de datos inicializada" -ForegroundColor Green
 
 # Check if dependencies are installed
 python -c "import fastapi" 2>$null
