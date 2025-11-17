@@ -21,7 +21,7 @@ from src.core.exceptions import RecordNotFoundError, ValidationError
 router = APIRouter()
 
 
-@router.get("", response_model=WeeklyConfigResponse)
+@router.get("/weekly", response_model=WeeklyConfigResponse)
 async def get_weekly_config(trainer: dict = Depends(get_current_trainer)):
     """
     Obtener configuración semanal completa.
@@ -61,7 +61,7 @@ async def get_weekly_config(trainer: dict = Depends(get_current_trainer)):
         )
 
 
-@router.get("/{weekday}", response_model=TrainingDayConfigResponse)
+@router.get("/day/{weekday}", response_model=TrainingDayConfigResponse)
 async def get_day_config(
     weekday: int,
     trainer: dict = Depends(get_current_trainer)
@@ -112,9 +112,8 @@ async def get_day_config(
         )
 
 
-@router.post("/{weekday}", response_model=SuccessResponse)
+@router.post("/day", response_model=SuccessResponse)
 async def update_day_config(
-    weekday: int,
     config: TrainingDayConfigCreate,
     trainer: dict = Depends(get_current_trainer)
 ):
@@ -122,9 +121,9 @@ async def update_day_config(
     Actualizar configuración de un día específico en la BD.
 
     Args:
-        weekday: Número del día (0=Lunes, 6=Domingo)
-        config: Datos de la configuración a actualizar
+        config: Datos de la configuración a actualizar (incluye weekday)
     """
+    weekday = config.weekday
     if not 0 <= weekday <= 6:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -174,7 +173,7 @@ async def update_day_config(
         )
 
 
-@router.delete("/{weekday}", response_model=SuccessResponse)
+@router.delete("/day/{weekday}", response_model=SuccessResponse)
 async def delete_day_config(
     weekday: int,
     trainer: dict = Depends(get_current_trainer)
