@@ -19,6 +19,7 @@ class MessageSchedule(Base):
     """
 
     __tablename__ = "message_schedules"
+    __table_args__ = {'extend_existing': True}
 
     # Referencias a plantilla y estudiante
     template_id: Mapped[int] = mapped_column(
