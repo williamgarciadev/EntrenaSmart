@@ -2,31 +2,23 @@
 Router de configuración semanal de entrenamientos.
 
 Endpoints para obtener y actualizar la configuración de entrenamientos por día.
+Persiste datos en PostgreSQL a través de ConfigTrainingService.
 """
 from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
-from backend.api.schemas import (
+from ..schemas import (
     TrainingDayConfigCreate,
     TrainingDayConfigResponse,
     WeeklyConfigResponse,
     SuccessResponse
 )
-from backend.api.dependencies import get_current_trainer
-from backend.utils.logger import logger
+from ..dependencies import get_current_trainer
+from ..logger import logger
+from src.models.base import get_db_context
+from src.services.config_training_service import ConfigTrainingService
+from src.core.exceptions import RecordNotFoundError, ValidationError
 
 router = APIRouter()
-
-# Simulación de datos en memoria para desarrollo
-# En producción, usar servicios de la base de datos existente
-MOCK_CONFIG = {
-    0: {"weekday": 0, "weekday_name": "Lunes", "session_type": "Pierna", "location": "2do Piso", "is_active": True},
-    1: {"weekday": 1, "weekday_name": "Martes", "session_type": "Funcional", "location": "3er Piso", "is_active": True},
-    2: {"weekday": 2, "weekday_name": "Miércoles", "session_type": "Brazo", "location": "2do Piso", "is_active": True},
-    3: {"weekday": 3, "weekday_name": "Jueves", "session_type": "Espalda", "location": "3er Piso", "is_active": True},
-    4: {"weekday": 4, "weekday_name": "Viernes", "session_type": "Pecho", "location": "2do Piso", "is_active": True},
-    5: {"weekday": 5, "weekday_name": "Sábado", "session_type": "Hombros", "location": "3er Piso", "is_active": False},
-    6: {"weekday": 6, "weekday_name": "Domingo", "session_type": "", "location": "", "is_active": False},
-}
 
 
 @router.get("", response_model=WeeklyConfigResponse)
@@ -34,30 +26,39 @@ async def get_weekly_config(trainer: dict = Depends(get_current_trainer)):
     """
     Obtener configuración semanal completa.
 
-    Retorna la configuración de entrenamiento para los 7 días de la semana.
+    Retorna la configuración de entrenamiento para los 7 días de la semana desde la BD.
     """
-    logger.info("Obteniendo configuración semanal")
+    logger.info("Obteniendo configuración semanal desde BD")
 
-    configs = []
-    for day in range(7):
-        config_data = MOCK_CONFIG.get(day, {
-            "weekday": day,
-            "weekday_name": ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"][day],
-            "session_type": "",
-            "location": "",
-            "is_active": False
-        })
+    try:
+        with get_db_context() as db:
+            service = ConfigTrainingService(db)
+            db_configs = service.get_all_configs()
 
-        # Agregar timestamps simulados
-        config_with_timestamps = {
-            **config_data,
-            "id": day + 1,
-            "created_at": "2025-11-16T00:00:00",
-            "updated_at": "2025-11-16T00:00:00"
-        }
-        configs.append(TrainingDayConfigResponse(**config_with_timestamps))
+        # Convertir objetos ORM a response models
+        configs = [
+            TrainingDayConfigResponse(
+                id=config.id,
+                weekday=config.weekday,
+                weekday_name=config.weekday_name,
+                session_type=config.session_type,
+                location=config.location,
+                is_active=config.is_active,
+                created_at=config.created_at,
+                updated_at=config.updated_at
+            )
+            for config in db_configs
+        ]
 
-    return WeeklyConfigResponse(configs=configs)
+        logger.info(f"✅ Obtenidas {len(configs)} configuraciones de la BD")
+        return WeeklyConfigResponse(configs=configs)
+
+    except Exception as e:
+        logger.error(f"Error obteniendo configuración semanal: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al obtener configuración semanal"
+        )
 
 
 @router.get("/{weekday}", response_model=TrainingDayConfigResponse)
@@ -66,7 +67,7 @@ async def get_day_config(
     trainer: dict = Depends(get_current_trainer)
 ):
     """
-    Obtener configuración de un día específico.
+    Obtener configuración de un día específico desde la BD.
 
     Args:
         weekday: Número del día (0=Lunes, 6=Domingo)
@@ -77,21 +78,38 @@ async def get_day_config(
             detail="El día debe estar entre 0 (Lunes) y 6 (Domingo)"
         )
 
-    config_data = MOCK_CONFIG.get(weekday)
-    if not config_data:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Configuración no encontrada para el día {weekday}"
+    try:
+        with get_db_context() as db:
+            service = ConfigTrainingService(db)
+            config = service.get_day_config(weekday)
+
+        if not config:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Configuración no encontrada para el día {weekday}"
+            )
+
+        logger.info(f"Obtenida configuración para día {weekday}: {config.session_type}")
+
+        return TrainingDayConfigResponse(
+            id=config.id,
+            weekday=config.weekday,
+            weekday_name=config.weekday_name,
+            session_type=config.session_type,
+            location=config.location,
+            is_active=config.is_active,
+            created_at=config.created_at,
+            updated_at=config.updated_at
         )
 
-    config_with_timestamps = {
-        **config_data,
-        "id": weekday + 1,
-        "created_at": "2025-11-16T00:00:00",
-        "updated_at": "2025-11-16T00:00:00"
-    }
-
-    return TrainingDayConfigResponse(**config_with_timestamps)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error obteniendo configuración del día {weekday}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al obtener configuración del día"
+        )
 
 
 @router.post("/{weekday}", response_model=SuccessResponse)
@@ -101,7 +119,7 @@ async def update_day_config(
     trainer: dict = Depends(get_current_trainer)
 ):
     """
-    Actualizar configuración de un día específico.
+    Actualizar configuración de un día específico en la BD.
 
     Args:
         weekday: Número del día (0=Lunes, 6=Domingo)
@@ -121,25 +139,39 @@ async def update_day_config(
             detail=f"Tipo de entrenamiento inválido. Debe ser uno de: {', '.join(VALID_TYPES)}"
         )
 
-    # Actualizar en memoria (en producción, guardar en BD)
-    MOCK_CONFIG[weekday] = {
-        "weekday": weekday,
-        "weekday_name": config.weekday_name,
-        "session_type": config.session_type,
-        "location": config.location,
-        "is_active": True if config.session_type else False
-    }
+    try:
+        with get_db_context() as db:
+            service = ConfigTrainingService(db)
+            config_obj = service.configure_day(
+                weekday=weekday,
+                session_type=config.session_type,
+                location=config.location
+            )
+            # Auto-commit al salir del contexto
 
-    logger.info(f"Configuración actualizada para el día {config.weekday_name}")
+        logger.info(f"✅ Configuración guardada en BD para {config.weekday_name}")
 
-    return SuccessResponse(
-        message=f"Configuración actualizada para {config.weekday_name}",
-        data={
-            "weekday": weekday,
-            "session_type": config.session_type,
-            "location": config.location
-        }
-    )
+        return SuccessResponse(
+            message=f"Configuración actualizada para {config.weekday_name}",
+            data={
+                "weekday": weekday,
+                "session_type": config.session_type,
+                "location": config.location
+            }
+        )
+
+    except ValidationError as e:
+        logger.warning(f"Error de validación: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"Error actualizando configuración: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al actualizar configuración"
+        )
 
 
 @router.delete("/{weekday}", response_model=SuccessResponse)
@@ -148,7 +180,7 @@ async def delete_day_config(
     trainer: dict = Depends(get_current_trainer)
 ):
     """
-    Eliminar configuración de un día específico.
+    Eliminar configuración de un día específico de la BD.
 
     Args:
         weekday: Número del día (0=Lunes, 6=Domingo)
@@ -159,19 +191,30 @@ async def delete_day_config(
             detail="El día debe estar entre 0 (Lunes) y 6 (Domingo)"
         )
 
-    day_name = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"][weekday]
+    day_names = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+    day_name = day_names[weekday]
 
-    # Limpiar configuración
-    MOCK_CONFIG[weekday] = {
-        "weekday": weekday,
-        "weekday_name": day_name,
-        "session_type": "",
-        "location": "",
-        "is_active": False
-    }
+    try:
+        with get_db_context() as db:
+            service = ConfigTrainingService(db)
+            service.delete_day_config(weekday)
+            # Auto-commit al salir del contexto
 
-    logger.info(f"Configuración eliminada para {day_name}")
+        logger.info(f"✅ Configuración eliminada de BD para {day_name}")
 
-    return SuccessResponse(
-        message=f"Configuración eliminada para {day_name}"
-    )
+        return SuccessResponse(
+            message=f"Configuración eliminada para {day_name}"
+        )
+
+    except RecordNotFoundError:
+        logger.warning(f"Intento de eliminar configuración inexistente para día {weekday}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No hay configuración para {day_name}"
+        )
+    except Exception as e:
+        logger.error(f"Error eliminando configuración: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al eliminar configuración"
+        )
