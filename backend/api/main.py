@@ -29,6 +29,16 @@ async def lifespan(app: FastAPI):
     """
     # Startup
     print("[STARTUP] API EntrenaSmart iniciada")
+    print("[STARTUP] Inicializando base de datos...")
+
+    # Importar init_db y todos los modelos para que se registren
+    from src.models.base import init_db
+    from src.models import Student, Training, TrainingDayConfig, Feedback, MessageSchedule
+
+    # Inicializar base de datos
+    init_db()
+    print("[STARTUP] Base de datos inicializada")
+
     yield
     # Shutdown
     print("[SHUTDOWN] API EntrenaSmart detenida")
