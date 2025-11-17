@@ -23,7 +23,6 @@ class Training(Base):
     """
 
     __tablename__ = "trainings"
-    __table_args__ = {'extend_existing': True}
 
     # Clave foranea
     student_id: Mapped[int] = mapped_column(
@@ -81,19 +80,19 @@ class Training(Base):
 
     # Relaciones
     student: Mapped["Student"] = relationship(
-        "src.models.student.Student",
+        "Student",
         back_populates="trainings",
         lazy="joined"
     )
 
     training_day_config: Mapped[Optional["TrainingDayConfig"]] = relationship(
-        "src.models.training_day_config.TrainingDayConfig",
+        "TrainingDayConfig",
         lazy="joined",
         foreign_keys=[training_day_config_id]
     )
 
     feedbacks: Mapped[List["Feedback"]] = relationship(
-        "src.models.feedback.Feedback",
+        "Feedback",
         back_populates="training",
         cascade="all, delete-orphan",
         lazy="select"

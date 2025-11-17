@@ -19,7 +19,6 @@ class MessageSchedule(Base):
     """
 
     __tablename__ = "message_schedules"
-    __table_args__ = {'extend_existing': True}
 
     # Referencias a plantilla y estudiante
     template_id: Mapped[int] = mapped_column(
@@ -67,7 +66,7 @@ class MessageSchedule(Base):
 
     # Relación con estudiante
     student: Mapped["Student"] = relationship(
-        "src.models.student.Student",
+        "Student",
         back_populates="message_schedules",
         lazy="select"
     )

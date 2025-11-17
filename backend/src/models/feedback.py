@@ -22,7 +22,6 @@ class Feedback(Base):
     """
 
     __tablename__ = "feedbacks"
-    __table_args__ = {'extend_existing': True}
 
     # Clave foranea
     training_id: Mapped[int] = mapped_column(
@@ -54,7 +53,7 @@ class Feedback(Base):
 
     # Relaciones
     training: Mapped["Training"] = relationship(
-        "src.models.training.Training",
+        "Training",
         back_populates="feedbacks",
         lazy="joined"
     )

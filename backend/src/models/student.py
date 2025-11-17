@@ -21,7 +21,6 @@ class Student(Base):
     """
 
     __tablename__ = "students"
-    __table_args__ = {'extend_existing': True}
 
     # Campos únicos
     chat_id: Mapped[Optional[int]] = mapped_column(
@@ -55,14 +54,14 @@ class Student(Base):
 
     # Relaciones
     trainings: Mapped[List["Training"]] = relationship(
-        "src.models.training.Training",
+        "Training",
         back_populates="student",
         cascade="all, delete-orphan",
         lazy="select"
     )
 
     message_schedules: Mapped[List["MessageSchedule"]] = relationship(
-        "src.models.message_schedule.MessageSchedule",
+        "MessageSchedule",
         back_populates="student",
         cascade="all, delete-orphan",
         lazy="select"
