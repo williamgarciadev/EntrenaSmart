@@ -1,7 +1,8 @@
 /**
  * Hook de autenticación para manejar login/logout y estado del usuario
  */
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react'
+import { useState, useEffect, createContext, useContext } from 'react'
+import type { ReactNode } from 'react'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 

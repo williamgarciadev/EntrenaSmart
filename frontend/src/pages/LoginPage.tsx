@@ -1,4 +1,5 @@
-import { useState, FormEvent } from 'react'
+import { useState } from 'react'
+import type { FormEvent } from 'react'
 import { useLocation } from 'wouter'
 import { motion } from 'framer-motion'
 import { LogIn, Zap, AlertCircle } from 'lucide-react'
