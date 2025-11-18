@@ -109,6 +109,8 @@ class ConfigTrainingRepository(BaseRepository[TrainingDayConfig]):
             # UPDATE
             config.session_type = session_type
             config.location = location
+            # Marcar como activa si tiene valores configurados
+            config.is_active = bool(session_type and location)
         else:
             # INSERT
             from datetime import datetime
@@ -119,7 +121,8 @@ class ConfigTrainingRepository(BaseRepository[TrainingDayConfig]):
                 weekday=weekday,
                 weekday_name=weekday_name,
                 session_type=session_type,
-                location=location
+                location=location,
+                is_active=bool(session_type and location)  # Activa solo si tiene valores
             )
             self.db.add(config)
 
