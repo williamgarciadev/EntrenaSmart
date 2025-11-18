@@ -27,13 +27,44 @@ async def get_weekly_config(trainer: dict = Depends(get_current_trainer)):
     Obtener configuración semanal completa.
 
     Retorna la configuración de entrenamiento para los 7 días de la semana desde la BD.
+    Si no existen registros, los crea automáticamente con valores por defecto.
     """
     logger.info("Obteniendo configuración semanal desde BD")
 
     try:
         with get_db_context() as db:
             service = ConfigTrainingService(db)
+
+            # Obtener configuraciones existentes
             db_configs = service.get_all_configs()
+
+            # Si no hay configuraciones, crear registros por defecto para los 7 días
+            if len(db_configs) == 0:
+                logger.info("No hay configuraciones, creando registros por defecto para los 7 días...")
+                day_names = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+
+                from backend.src.models.training_day_config import TrainingDayConfig
+
+                for weekday in range(7):
+                    config = TrainingDayConfig(
+                        weekday=weekday,
+                        weekday_name=day_names[weekday],
+                        session_type="",
+                        location="",
+                        is_active=False  # No configurado por defecto
+                    )
+                    db.add(config)
+
+                db.commit()
+                logger.info("✅ Registros por defecto creados")
+
+                # Obtener las configuraciones recién creadas
+                db_configs = service.get_all_configs()
+
+            # Si aún así hay menos de 7, obtener todos (activos e inactivos)
+            if len(db_configs) < 7:
+                from backend.src.models.training_day_config import TrainingDayConfig
+                db_configs = db.query(TrainingDayConfig).order_by(TrainingDayConfig.weekday).all()
 
         # Convertir objetos ORM a response models
         configs = [
