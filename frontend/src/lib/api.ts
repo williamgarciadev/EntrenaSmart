@@ -35,6 +35,27 @@ export interface StudentListResponse {
   total: number
 }
 
+export interface Training {
+  id: number
+  student_id: number
+  weekday: number
+  weekday_name: string
+  time_str: string
+  session_type: string
+  location: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface StudentTrainingsResponse {
+  student_id: number
+  student_name: string
+  trainings: Training[]
+  total: number
+  message: string
+}
+
 export const studentsAPI = {
   async listStudents(activeOnly = false): Promise<StudentListResponse> {
     const url = `${API_BASE_URL}/api/students${activeOnly ? '?active_only=true' : ''}`
@@ -85,6 +106,14 @@ export const studentsAPI = {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     })
     if (!response.ok) throw new Error('Failed to delete student')
+  },
+
+  async getStudentTrainings(id: number): Promise<StudentTrainingsResponse> {
+    const response = await fetch(`${API_BASE_URL}/api/students/${id}/trainings`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+    if (!response.ok) throw new Error('Failed to fetch student trainings')
+    return response.json()
   }
 }
 

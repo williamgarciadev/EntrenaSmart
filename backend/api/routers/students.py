@@ -12,6 +12,8 @@ from ..schemas import (
     StudentUpdate,
     StudentResponse,
     StudentListResponse,
+    StudentTrainingsResponse,
+    TrainingResponse,
     SuccessResponse
 )
 from ..dependencies import get_current_trainer
@@ -244,6 +246,71 @@ async def update_student(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error al actualizar estudiante"
+        )
+
+
+@router.get("/{student_id}/trainings", response_model=StudentTrainingsResponse)
+async def get_student_trainings(
+    student_id: int,
+    trainer: dict = Depends(get_current_trainer)
+):
+    """
+    Obtener todos los entrenamientos programados de un estudiante.
+
+    Args:
+        student_id: ID del estudiante
+
+    Returns:
+        StudentTrainingsResponse con lista de entrenamientos
+    """
+    try:
+        with get_db_context() as db:
+            # Verificar que el estudiante existe
+            student_service = StudentService(db)
+            student = student_service.get_student_by_id_or_fail(student_id)
+
+            # Obtener entrenamientos del estudiante
+            from backend.src.services.training_service import TrainingService
+            training_service = TrainingService(db)
+            trainings = training_service.get_all_trainings(student_id)
+
+        # Convertir a response models
+        training_responses = [
+            TrainingResponse(
+                id=training.id,
+                student_id=training.student_id,
+                weekday=training.weekday,
+                weekday_name=training.weekday_name,
+                time_str=training.time_str,
+                session_type=training.session_type,
+                location=training.location or "",
+                is_active=training.is_active,
+                created_at=training.created_at,
+                updated_at=training.updated_at
+            )
+            for training in trainings
+        ]
+
+        logger.info(f"✅ Obtenidos {len(training_responses)} entrenamientos de {student.name}")
+
+        return StudentTrainingsResponse(
+            student_id=student.id,
+            student_name=student.name,
+            trainings=training_responses,
+            total=len(training_responses)
+        )
+
+    except RecordNotFoundError:
+        logger.warning(f"Estudiante {student_id} no encontrado en BD")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Estudiante {student_id} no encontrado"
+        )
+    except Exception as e:
+        logger.error(f"Error obteniendo entrenamientos del estudiante {student_id}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al obtener entrenamientos del estudiante"
         )
 
 

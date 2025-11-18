@@ -7,12 +7,18 @@ import {
   Trash2,
   Edit,
   AlertCircle,
+  ChevronDown,
+  ChevronUp,
+  Calendar,
+  Clock,
+  MapPin,
 } from 'lucide-react'
 import {
   useStudents,
   useCreateStudent,
   useUpdateStudent,
   useDeleteStudent,
+  useStudentTrainings,
 } from '@/hooks/useStudents'
 import { useToast } from '@/components/Toast'
 import { Button } from '@/components/ui/Button'
@@ -23,6 +29,7 @@ export default function StudentsPage() {
   const toast = useToast()
   const [isEditing, setIsEditing] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
+  const [expandedStudentId, setExpandedStudentId] = useState<number | null>(null)
 
   const { data: studentsData, isLoading, isError } = useStudents()
   const createMutation = useCreateStudent()
@@ -173,47 +180,69 @@ export default function StudentsPage() {
                   </thead>
                   <tbody>
                     {students.map((student: Student) => (
-                      <tr
-                        key={student.id}
-                        className={`border-b border-border hover:bg-accent/5 transition ${
-                          editingId === student.id ? 'bg-primary/10' : ''
-                        }`}
-                      >
-                        <td className="py-3 px-4 text-foreground">{student.name}</td>
-                        <td className="py-3 px-4 text-muted-foreground">
-                          {student.telegram_username ? `@${student.telegram_username}` : '-'}
-                        </td>
-                        <td className="py-3 px-4 text-muted-foreground">
-                          {student.chat_id || '-'}
-                        </td>
-                        <td className="py-3 px-4">
-                          <span
-                            className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                              student.is_active
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-red-100 text-red-800'
-                            }`}
-                          >
-                            {student.is_active ? 'Activo' : 'Inactivo'}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-right flex justify-end gap-2">
-                          <button
-                            onClick={() => handleEdit(student)}
-                            className="text-primary hover:text-primary/80 p-1 hover:bg-blue-50 rounded transition"
-                            title="Editar estudiante"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(student.id)}
-                            className="text-destructive hover:text-destructive/80 p-1 hover:bg-red-50 rounded transition"
-                            title="Eliminar estudiante"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
+                      <>
+                        <tr
+                          key={student.id}
+                          className={`border-b border-border hover:bg-accent/5 transition ${
+                            editingId === student.id ? 'bg-primary/10' : ''
+                          }`}
+                        >
+                          <td className="py-3 px-4 text-foreground">{student.name}</td>
+                          <td className="py-3 px-4 text-muted-foreground">
+                            {student.telegram_username ? `@${student.telegram_username}` : '-'}
+                          </td>
+                          <td className="py-3 px-4 text-muted-foreground">
+                            {student.chat_id || '-'}
+                          </td>
+                          <td className="py-3 px-4">
+                            <span
+                              className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                                student.is_active
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-red-100 text-red-800'
+                              }`}
+                            >
+                              {student.is_active ? 'Activo' : 'Inactivo'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-right flex justify-end gap-2">
+                            <button
+                              onClick={() => setExpandedStudentId(
+                                expandedStudentId === student.id ? null : student.id
+                              )}
+                              className="text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded transition"
+                              title="Ver horarios"
+                            >
+                              {expandedStudentId === student.id ? (
+                                <ChevronUp className="w-4 h-4" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4" />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => handleEdit(student)}
+                              className="text-primary hover:text-primary/80 p-1 hover:bg-blue-50 rounded transition"
+                              title="Editar estudiante"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(student.id)}
+                              className="text-destructive hover:text-destructive/80 p-1 hover:bg-red-50 rounded transition"
+                              title="Eliminar estudiante"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                        {expandedStudentId === student.id && (
+                          <tr key={`${student.id}-trainings`}>
+                            <td colSpan={5} className="p-4 bg-gray-50">
+                              <StudentTrainingsView studentId={student.id} />
+                            </td>
+                          </tr>
+                        )}
+                      </>
                     ))}
                   </tbody>
                 </table>
@@ -327,6 +356,78 @@ export default function StudentsPage() {
             </div>
           )}
         </div>
+      </div>
+    </div>
+  )
+}
+
+function StudentTrainingsView({ studentId }: { studentId: number }) {
+  const { data, isLoading, isError } = useStudentTrainings(studentId)
+
+  if (isLoading) {
+    return <div className="text-sm text-muted-foreground">Cargando horarios...</div>
+  }
+
+  if (isError) {
+    return <div className="text-sm text-red-600">Error al cargar horarios</div>
+  }
+
+  if (!data || data.trainings.length === 0) {
+    return (
+      <div className="text-sm text-muted-foreground italic">
+        No tiene entrenamientos programados
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      <h4 className="font-semibold text-foreground flex items-center gap-2">
+        <Calendar className="w-4 h-4" />
+        Horarios Programados ({data.total})
+      </h4>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {data.trainings.map((training) => (
+          <div
+            key={training.id}
+            className="bg-white border border-border rounded-lg p-3 hover:shadow-sm transition"
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <Calendar className="w-4 h-4 text-blue-600" />
+                  <span className="font-medium text-foreground">
+                    {training.weekday_name}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                  <Clock className="w-3 h-3" />
+                  <span>{training.time_str}</span>
+                </div>
+                {training.session_type && (
+                  <div className="text-sm text-foreground font-medium">
+                    {training.session_type}
+                  </div>
+                )}
+                {training.location && (
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                    <MapPin className="w-3 h-3" />
+                    <span>{training.location}</span>
+                  </div>
+                )}
+              </div>
+              <span
+                className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                  training.is_active
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-gray-100 text-gray-800'
+                }`}
+              >
+                {training.is_active ? 'Activo' : 'Inactivo'}
+              </span>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )

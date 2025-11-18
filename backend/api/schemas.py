@@ -134,6 +134,15 @@ class TrainingResponse(TrainingBase):
         from_attributes = True
 
 
+class StudentTrainingsResponse(BaseModel):
+    """Response con entrenamientos de un estudiante."""
+    student_id: int
+    student_name: str
+    trainings: list[TrainingResponse]
+    total: int = 0
+    message: str = "Entrenamientos obtenidos exitosamente"
+
+
 # ============================================================================
 # RESPUESTAS GENÉRICAS
 # ============================================================================

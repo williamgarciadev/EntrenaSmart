@@ -121,3 +121,15 @@ export function useDeleteStudent() {
     },
   })
 }
+
+/**
+ * Hook para obtener los entrenamientos de un estudiante
+ */
+export function useStudentTrainings(studentId: number) {
+  return useQuery({
+    queryKey: ['students', studentId, 'trainings'],
+    queryFn: () => studentsAPI.getStudentTrainings(studentId),
+    enabled: studentId > 0,
+    staleTime: 1000 * 60 * 2, // 2 minutos
+  })
+}
