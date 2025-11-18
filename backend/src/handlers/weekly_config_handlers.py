@@ -196,27 +196,52 @@ async def handle_weekly_finish(update: Update, context: ContextTypes.DEFAULT_TYP
             )
             return
 
+        # Obtener scheduler desde bot_data para programar recordatorios
+        scheduler_service = context.application.bot_data.get('scheduler_service')
+        if not scheduler_service:
+            logger.warning("⚠️ [WC] SchedulerService no disponible - recordatorios no se programarán")
+
+        # Obtener configuraciones de entrenamiento por día (para session_type y location)
+        from backend.src.models.training_day_config import TrainingDayConfig
+        day_configs = {}
+        for t in trainings:
+            config = db.query(TrainingDayConfig).filter(
+                TrainingDayConfig.weekday == t['day']
+            ).first()
+            if config:
+                day_configs[t['day']] = {
+                    'session_type': config.session_type,
+                    'location': config.location
+                }
+
         # Eliminar entrenamientos anteriores del estudiante (para esta semana)
-        training_service = TrainingService(db)
+        training_service = TrainingService(db, scheduler_service)
         existing = training_service.get_all_trainings(student.id)
         for training in existing:
             training_service.delete_training(training.id)
 
         logger.info(f"🗑️ [WC] Eliminados {len(existing)} entrenamientos anteriores de {student.name}")
 
-        # Crear nuevos entrenamientos
+        # Crear nuevos entrenamientos con recordatorios automáticos
         day_names = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
         created_list = []
 
         for t in trainings:
+            # Obtener session_type y location de la configuración del día
+            config = day_configs.get(t['day'], {})
+            session_type = config.get('session_type', 'Entrenamiento')
+            location = config.get('location', '')
+
             training = training_service.add_training(
                 student_id=student.id,
                 weekday=t['day'],
                 weekday_name=day_names[t['day']],
-                time_str=t['time']
+                time_str=t['time'],
+                session_type=session_type,
+                location=location
             )
             created_list.append(f"• {day_names[t['day']]} a las {t['time']}")
-            logger.info(f"✅ [WC] Creado entrenamiento: {day_names[t['day']]} {t['time']}")
+            logger.info(f"✅ [WC] Creado entrenamiento: {day_names[t['day']]} {t['time']} ({session_type})")
 
         # Mensaje de confirmación
         summary = "\n".join(created_list)

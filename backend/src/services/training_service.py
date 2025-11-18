@@ -83,7 +83,7 @@ class TrainingService:
         # Programar recordatorio si scheduler está disponible
         if self.scheduler:
             try:
-                from src.models.student import Student
+                from backend.src.models.student import Student
                 student = self.db.query(Student).filter(Student.id == student_id).first()
 
                 if student and student.chat_id:
@@ -92,7 +92,8 @@ class TrainingService:
                         student_chat_id=student.chat_id,
                         weekday=weekday,
                         training_time=time_str,
-                        session_type=session_type or "Entrenamiento"
+                        session_type=session_type or "Entrenamiento",
+                        location=location or ""
                     )
                     logger.info(f"Recordatorio programado para entrenamiento {training.id}")
             except Exception as e:
@@ -204,7 +205,7 @@ class TrainingService:
         # Reprogramar recordatorio si cambió hora o día
         if (time_changed or day_changed) and self.scheduler:
             try:
-                from src.models.student import Student
+                from backend.src.models.student import Student
                 student = self.db.query(Student).filter(Student.id == training.student_id).first()
 
                 if student and student.chat_id:
@@ -215,7 +216,8 @@ class TrainingService:
                         student_chat_id=student.chat_id,
                         weekday=training.weekday,
                         training_time=training.time_str,
-                        session_type=training.session_type or "Entrenamiento"
+                        session_type=training.session_type or "Entrenamiento",
+                        location=training.location or ""
                     )
                     logger.info(f"Recordatorio reprogramado para entrenamiento {training_id}")
             except Exception as e:
