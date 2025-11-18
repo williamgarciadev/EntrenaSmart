@@ -209,12 +209,11 @@ async def handle_weekly_finish(update: Update, context: ContextTypes.DEFAULT_TYP
         created_list = []
 
         for t in trainings:
-            hour, minute = t['time'].split(':')
-            training = training_service.create_training(
+            training = training_service.add_training(
                 student_id=student.id,
                 weekday=t['day'],
-                hour=int(hour),
-                minute=int(minute)
+                weekday_name=day_names[t['day']],
+                time_str=t['time']
             )
             created_list.append(f"• {day_names[t['day']]} a las {t['time']}")
             logger.info(f"✅ [WC] Creado entrenamiento: {day_names[t['day']]} {t['time']}")
