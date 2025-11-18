@@ -16,6 +16,8 @@ services:
       POSTGRES_DB: entrenasmart
       POSTGRES_USER: entrenasmart
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-entrenasmart123}
+      TZ: America/Bogota
+      PGTZ: America/Bogota
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -49,6 +51,7 @@ services:
       - DATABASE_URL=postgresql://entrenasmart:${POSTGRES_PASSWORD:-entrenasmart123}@postgres:5432/entrenasmart
       - PYTHONUNBUFFERED=1
       - DEBUG=False
+      - TZ=America/Bogota
 
     ports:
       - "8000:8000"
@@ -117,6 +120,7 @@ services:
       - DATABASE_URL=postgresql://entrenasmart:${POSTGRES_PASSWORD:-entrenasmart123}@postgres:5432/entrenasmart
       - PYTHONUNBUFFERED=1
       - DEBUG=False
+      - TZ=America/Bogota
 
     volumes:
       - ./storage:/app/storage

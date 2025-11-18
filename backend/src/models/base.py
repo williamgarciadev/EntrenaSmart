@@ -28,13 +28,13 @@ class Base(DeclarativeBase):
     # Columnas comunes a todos los modelos
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         default=func.current_timestamp(),
         nullable=False,
         comment="Fecha y hora de creacion del registro"
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         default=func.current_timestamp(),
         onupdate=func.current_timestamp(),
         nullable=False,
