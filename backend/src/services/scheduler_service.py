@@ -322,8 +322,11 @@ class SchedulerService:
         logger.info("👁️ [CONFIG_WATCHER] Programando watcher de configuración...")
 
         try:
+            # Importar tarea
+            from backend.src.services.tasks.config_watcher_task import ConfigWatcherTask
+
             self.scheduler.add_job(
-                self._check_config_changes,
+                ConfigWatcherTask.check_config_changes,
                 trigger=CronTrigger(minute='*', timezone=self.timezone),  # Cada minuto
                 id='config_watcher',
                 name='Config Watcher',
@@ -332,49 +335,6 @@ class SchedulerService:
             logger.info("✅ [CONFIG_WATCHER] Watcher programado - revisará cambios cada minuto")
         except Exception as e:
             logger.error(f"❌ [CONFIG_WATCHER] Error programando watcher: {str(e)}", exc_info=True)
-
-    def _check_config_changes(self) -> None:
-        """
-        Revisa si la configuración del recordatorio semanal cambió.
-
-        Compara la configuración actual de BD con la última conocida.
-        Si hay cambios, reprograma el recordatorio automáticamente.
-        """
-        try:
-            from backend.src.models.base import get_db
-            from backend.src.services.weekly_reminder_service import WeeklyReminderService
-
-            db = get_db()
-            try:
-                service = WeeklyReminderService(db)
-                config = service.get_or_create_config()
-
-                # Crear hash de configuración actual
-                config_hash = f"{config['is_active']}_{config['send_day']}_{config['send_hour']}_{config['send_minute']}_{config['is_monday_off']}"
-
-                # Obtener hash anterior (guardado en variable de instancia)
-                if not hasattr(self, '_last_config_hash'):
-                    self._last_config_hash = config_hash
-                    return
-
-                # Comparar
-                if config_hash != self._last_config_hash:
-                    logger.info(f"🔄 [CONFIG_WATCHER] ¡Detectado cambio en configuración!")
-                    logger.info(f"   - Anterior: {self._last_config_hash}")
-                    logger.info(f"   - Actual: {config_hash}")
-
-                    # Reprogramar
-                    self.reschedule_weekly_reminder()
-
-                    # Actualizar hash
-                    self._last_config_hash = config_hash
-                    logger.info("✅ [CONFIG_WATCHER] Recordatorio reprogramado automáticamente")
-
-            finally:
-                db.close()
-
-        except Exception as e:
-            logger.error(f"❌ [CONFIG_WATCHER] Error revisando cambios: {str(e)}", exc_info=True)
 
     def schedule_training_reminder(
         self,
