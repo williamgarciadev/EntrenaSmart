@@ -66,10 +66,10 @@ class TrainingDayConfig(Base):
 
     def __init__(
         self,
-        weekday: int,
-        weekday_name: str,
-        session_type: str,
-        location: str,
+        weekday: Optional[int] = None,
+        weekday_name: Optional[str] = None,
+        session_type: Optional[str] = None,
+        location: Optional[str] = None,
         is_active: bool = True
     ):
         """
@@ -82,10 +82,14 @@ class TrainingDayConfig(Base):
             location: Ubicación/piso
             is_active: Si está activa
         """
-        self.weekday = weekday
-        self.weekday_name = weekday_name
-        self.session_type = session_type
-        self.location = location
+        if weekday is not None:
+            self.weekday = weekday
+        if weekday_name is not None:
+            self.weekday_name = weekday_name
+        if session_type is not None:
+            self.session_type = session_type
+        if location is not None:
+            self.location = location
         self.is_active = is_active
 
     def deactivate(self) -> None:
