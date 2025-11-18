@@ -46,13 +46,12 @@ async def get_weekly_config(trainer: dict = Depends(get_current_trainer)):
                 from backend.src.models.training_day_config import TrainingDayConfig
 
                 for weekday in range(7):
-                    config = TrainingDayConfig(
-                        weekday=weekday,
-                        weekday_name=day_names[weekday],
-                        session_type="",
-                        location="",
-                        is_active=False  # No configurado por defecto
-                    )
+                    config = TrainingDayConfig()
+                    config.weekday = weekday
+                    config.weekday_name = day_names[weekday]
+                    config.session_type = ""
+                    config.location = ""
+                    config.is_active = False  # No configurado por defecto
                     db.add(config)
 
                 db.commit()
