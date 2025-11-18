@@ -33,17 +33,15 @@ async def get_weekly_config(trainer: dict = Depends(get_current_trainer)):
 
     try:
         with get_db_context() as db:
-            service = ConfigTrainingService(db)
+            from backend.src.models.training_day_config import TrainingDayConfig
 
-            # Obtener configuraciones existentes
-            db_configs = service.get_all_configs()
+            # Primero, verificar si existen registros en la tabla (activos o no)
+            existing_count = db.query(TrainingDayConfig).count()
 
-            # Si no hay configuraciones, crear registros por defecto para los 7 días
-            if len(db_configs) == 0:
-                logger.info("No hay configuraciones, creando registros por defecto para los 7 días...")
+            # Si no hay NINGÚN registro, crear los 7 días por defecto
+            if existing_count == 0:
+                logger.info("No hay registros en la tabla, creando por defecto para los 7 días...")
                 day_names = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
-
-                from backend.src.models.training_day_config import TrainingDayConfig
 
                 for weekday in range(7):
                     config = TrainingDayConfig()
@@ -57,13 +55,8 @@ async def get_weekly_config(trainer: dict = Depends(get_current_trainer)):
                 db.commit()
                 logger.info("✅ Registros por defecto creados")
 
-                # Obtener las configuraciones recién creadas
-                db_configs = service.get_all_configs()
-
-            # Si aún así hay menos de 7, obtener todos (activos e inactivos)
-            if len(db_configs) < 7:
-                from backend.src.models.training_day_config import TrainingDayConfig
-                db_configs = db.query(TrainingDayConfig).order_by(TrainingDayConfig.weekday).all()
+            # Obtener TODOS los registros (activos e inactivos) ordenados por día
+            db_configs = db.query(TrainingDayConfig).order_by(TrainingDayConfig.weekday).all()
 
         # Convertir objetos ORM a response models
         configs = [
