@@ -1,0 +1,195 @@
+# EntrenaSmart - Docker Compose (Producción)
+# Ejecutar con:
+# docker compose -f docker-compose.prod.yml --project-name entrenasmart-prod up -d
+
+name: entrenasmart-prod
+
+version: '3.8'
+
+services:
+  # ============================================================================
+  # Base de Datos - PostgreSQL
+  # ============================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: entrenasmart-prod-db
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: entrenasmart
+      POSTGRES_USER: entrenasmart
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-entrenasmart123}
+      TZ: America/Bogota
+      PGTZ: America/Bogota
+
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+
+    ports:
+      - "5432:5432"   # Puerto original
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U entrenasmart"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - entrenasmart-prod-network
+
+  # ============================================================================
+  # API Backend - FastAPI
+  # ============================================================================
+  api:
+    build:
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile.api
+    container_name: entrenasmart-prod-api
+    restart: unless-stopped
+
+    env_file:
+      - ../../.env
+
+    environment:
+      - DATABASE_URL=postgresql://entrenasmart:${POSTGRES_PASSWORD:-entrenasmart123}@postgres:5432/entrenasmart
+      - PYTHONUNBUFFERED=1
+      - DEBUG=False
+      - TZ=America/Bogota
+
+    ports:
+      - "8000:8000"   # Puerto original
+
+    volumes:
+      - storage_prod:/app/storage
+      - logs_prod:/app/logs
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    networks:
+      - entrenasmart-prod-network
+
+  # ============================================================================
+  # Frontend - React/Vite
+  # ============================================================================
+  frontend:
+    build:
+      context: ../../frontend
+      dockerfile: ../deployment/docker/Dockerfile.frontend
+      args:
+        VITE_API_URL: http://localhost:8000
+    container_name: entrenasmart-prod-frontend
+    restart: unless-stopped
+
+    environment:
+      - VITE_API_URL=http://api:8000
+
+    ports:
+      - "5173:80"     # Puerto original
+
+    depends_on:
+      - api
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    networks:
+      - entrenasmart-prod-network
+
+  # ============================================================================
+  # Bot de Telegram
+  # ============================================================================
+  bot:
+    build:
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile.bot
+    container_name: entrenasmart-prod-bot
+    restart: unless-stopped
+
+    env_file:
+      - ../../.env
+
+    environment:
+      - DATABASE_URL=postgresql://entrenasmart:${POSTGRES_PASSWORD:-entrenasmart123}@postgres:5432/entrenasmart
+      - PYTHONUNBUFFERED=1
+      - DEBUG=False
+      - TZ=America/Bogota
+
+    volumes:
+      - storage_prod:/app/storage
+      - logs_prod:/app/logs
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    networks:
+      - entrenasmart-prod-network
+
+  # ============================================================================
+  # pgAdmin
+  # ============================================================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: entrenasmart-prod-pgadmin
+    restart: unless-stopped
+
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@entrenasmart.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION: 'False'
+
+    ports:
+      - "5050:80"     # Puerto original
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/misc/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    networks:
+      - entrenasmart-prod-network
+
+# ============================================================================
+# Volúmenes persistentes (PRODUCCIÓN)
+# ============================================================================
+volumes:
+  postgres_data_prod:
+    driver: local
+  storage_prod:
+    driver: local
+  logs_prod:
+    driver: local
+
+# ============================================================================
+# Red de Producción
+# ============================================================================
+networks:
+  entrenasmart-prod-network:
+    driver: bridge
