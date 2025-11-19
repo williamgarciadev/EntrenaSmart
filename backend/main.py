@@ -249,11 +249,20 @@ def main() -> None:
     init_db()
     logger.info("Base de datos inicializada")
 
-    # Crear aplicación
+    # Crear aplicación con timeouts configurados para Docker
     logger.info("Creando aplicación de Telegram...")
+    logger.info(f"   - read_timeout: {settings.telegram_read_timeout}s")
+    logger.info(f"   - write_timeout: {settings.telegram_write_timeout}s")
+    logger.info(f"   - connect_timeout: {settings.telegram_connect_timeout}s")
+    logger.info(f"   - pool_timeout: {settings.telegram_pool_timeout}s")
+
     application = (
         Application.builder()
         .token(settings.telegram_bot_token)
+        .read_timeout(settings.telegram_read_timeout)
+        .write_timeout(settings.telegram_write_timeout)
+        .connect_timeout(settings.telegram_connect_timeout)
+        .pool_timeout(settings.telegram_pool_timeout)
         .post_init(post_init)
         .post_shutdown(post_shutdown)
         .build()

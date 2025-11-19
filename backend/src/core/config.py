@@ -53,6 +53,44 @@ class Settings(BaseSettings):
     )
 
     # ====================================
+    # Configuración de Timeouts para Telegram Bot
+    # ====================================
+    telegram_read_timeout: float = Field(
+        default=30.0,
+        description="Timeout de lectura para requests HTTP a Telegram API (segundos)",
+        ge=5.0,
+        le=300.0
+    )
+
+    telegram_write_timeout: float = Field(
+        default=30.0,
+        description="Timeout de escritura para requests HTTP a Telegram API (segundos)",
+        ge=5.0,
+        le=300.0
+    )
+
+    telegram_connect_timeout: float = Field(
+        default=30.0,
+        description="Timeout de conexión para requests HTTP a Telegram API (segundos)",
+        ge=5.0,
+        le=300.0
+    )
+
+    telegram_pool_timeout: float = Field(
+        default=30.0,
+        description="Timeout del pool de conexiones (segundos)",
+        ge=5.0,
+        le=300.0
+    )
+
+    task_future_timeout: float = Field(
+        default=30.0,
+        description="Timeout para operaciones async desde scheduler (segundos)",
+        ge=5.0,
+        le=300.0
+    )
+
+    # ====================================
     # Configuración de Zona Horaria
     # ====================================
     timezone: str = Field(

@@ -112,8 +112,10 @@ class WeeklyReminderTask:
                         event_loop
                     )
 
-                    # Esperar resultado con timeout de 10 segundos
-                    future.result(timeout=10)
+                    # Esperar resultado con timeout configurable
+                    from backend.src.core.config import settings
+                    timeout_seconds = settings.task_future_timeout
+                    future.result(timeout=timeout_seconds)
                     success_count += 1
                     logger.info(f"   ✅ Enviado a {student.name}")
 
