@@ -88,7 +88,7 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Configurar CORS
+# Configurar CORS - DEBE SER EL PRIMER MIDDLEWARE
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
@@ -96,6 +96,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Middleware de logging para debug
+@app.middleware("http")
+async def log_requests(request, call_next):
+    origin = request.headers.get('origin', 'N/A')
+    print(f"[REQUEST] {request.method} {request.url.path} - Origin: {origin}")
+    response = await call_next(request)
+    cors_header = response.headers.get('access-control-allow-origin', 'N/A')
+    print(f"[RESPONSE] {request.method} {request.url.path} - Status: {response.status_code} - CORS: {cors_header}")
+    return response
 
 
 # Rutas
