@@ -42,5 +42,5 @@ RUN useradd -m -u 1000 botuser && \
 USER botuser
 
 # Comando por defecto
-CMD ["python", "main.py"]
+CMD ["python", "backend/main.py"]
 
