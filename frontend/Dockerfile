@@ -3,14 +3,14 @@ FROM node:20-alpine as builder
 
 WORKDIR /app
 
-# Copiar package files
-COPY package*.json ./
+# Copiar package files desde frontend/
+COPY frontend/package*.json ./
 
 # Instalar dependencias
 RUN npm ci
 
-# Copiar código
-COPY . .
+# Copiar código desde frontend/
+COPY frontend/ .
 
 # ARG para Railway - URL de la API
 ARG VITE_API_URL=http://localhost:8000
@@ -22,8 +22,8 @@ RUN npm run build
 # Production stage
 FROM nginx:alpine
 
-# Copiar configuración nginx desde archivo
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copiar configuración nginx desde frontend/
+COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copiar build del stage anterior
 COPY --from=builder /app/dist /usr/share/nginx/html
