@@ -9,6 +9,39 @@ Inicializando base de datos (sqlite:///storage/entrenasmart.db)...
 ERROR: Compiler can't render element of type ARRAY
 ```
 
+**Causa raíz**: La variable `DATABASE_URL=${{Postgres.DATABASE_URL}}` **no se está interpolando** en Railway, lo que significa que el servicio PostgreSQL probablemente no existe o tiene un nombre diferente.
+
+## Diagnóstico Rápido (EJECUTA ESTO PRIMERO)
+
+He creado un script de diagnóstico que te mostrará exactamente qué está pasando. Ejecútalo en Railway:
+
+### Opción 1: Usando Railway CLI (Recomendado)
+
+```bash
+# Si tienes Railway CLI instalado
+railway login
+railway link  # Selecciona tu proyecto
+railway run -s Bot python backend/diagnose_db.py
+```
+
+### Opción 2: Usando Railway Shell
+
+1. Ve a Railway Dashboard → Servicio Bot
+2. Click en "Shell" o "Terminal"
+3. Ejecuta: `python backend/diagnose_db.py`
+
+### Qué muestra el diagnóstico:
+
+- ✅ Si DATABASE_URL existe y su valor
+- ✅ Si la referencia `${{Postgres.DATABASE_URL}}` se está resolviendo correctamente
+- ✅ Qué tipo de base de datos detecta la aplicación (SQLite vs PostgreSQL)
+- ✅ Si puede conectarse exitosamente a PostgreSQL
+- ✅ Nombre exacto del servicio PostgreSQL que necesitas usar
+
+**💡 Ejecuta este script y comparte la salida para un diagnóstico preciso.**
+
+---
+
 ## Solución: 3 Pasos Sencillos
 
 ### Paso 1: Crear Servicio PostgreSQL en Railway
