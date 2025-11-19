@@ -79,8 +79,10 @@ services:
   # ============================================================================
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_URL: http://localhost:8000
     container_name: entrenasmart-frontend
     restart: unless-stopped
 
