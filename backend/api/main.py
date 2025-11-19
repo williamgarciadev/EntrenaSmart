@@ -17,7 +17,7 @@ from .routers import auth, training_config, templates, schedules, students, week
 from .middleware import verify_auth_header
 
 # Configuración CORS
-CORS_ORIGINS = os.getenv("API_CORS_ORIGINS", "http://localhost:5173").split(",")
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
 
 
 # Variable global para la instancia del bot de Telegram
