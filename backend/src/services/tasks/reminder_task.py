@@ -53,8 +53,8 @@ class ReminderTask:
         Returns:
             bool: True si la tarea fue enviada, False si hubo error
         """
-        from src.models.base import get_db
-        from src.services.config_training_service import ConfigTrainingService
+        from backend.src.models.base import get_db
+        from backend.src.services.config_training_service import ConfigTrainingService
 
         logger.info(f"🔔 [SEND_REMINDER] ===== INICIANDO ENVÍO DE RECORDATORIO =====")
         logger.info(f"🔔 [SEND_REMINDER] Parámetros recibidos:")
@@ -135,9 +135,11 @@ class ReminderTask:
                     )
                     logger.info(f"✅ [SEND_REMINDER] Future creado: {future}")
 
-                    # Esperar a que se envíe (con timeout)
-                    logger.info(f"⏳ [SEND_REMINDER] Esperando resultado (timeout=5s)...")
-                    result = future.result(timeout=5)
+                    # Esperar a que se envíe (con timeout configurable)
+                    from src.core.config import settings
+                    timeout_seconds = settings.task_future_timeout
+                    logger.info(f"⏳ [SEND_REMINDER] Esperando resultado (timeout={timeout_seconds}s)...")
+                    result = future.result(timeout=timeout_seconds)
                     logger.info(f"✅ [SEND_REMINDER] Resultado obtenido: {result}")
 
                     logger.info(
@@ -149,7 +151,8 @@ class ReminderTask:
                     return True
 
                 except concurrent.futures.TimeoutError as e:
-                    logger.error(f"❌ [SEND_REMINDER] Timeout esperando resultado (>5s): {str(e)}")
+                    logger.error(f"❌ [SEND_REMINDER] Timeout esperando resultado (>{timeout_seconds}s): {str(e)}")
+                    logger.error(f"   Sugerencia: Aumentar TASK_FUTURE_TIMEOUT en variables de entorno")
                     return False
                 except Exception as e:
                     logger.error(f"❌ [SEND_REMINDER] Error enviando con run_coroutine_threadsafe: {str(e)}", exc_info=True)

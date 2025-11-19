@@ -1,7 +1,9 @@
 # EntrenaSmart - Docker Compose
 # Configuración para deployment con Bot, API, Frontend y PostgreSQL
+#docker compose --project-name docentrena up -d
 
 version: '3.8'
+
 
 services:
   # ============================================================================
@@ -83,7 +85,7 @@ services:
       dockerfile: ../deployment/docker/Dockerfile.frontend
       args:
         VITE_API_URL: http://localhost:8000
-    container_name: entrenasmart-frontend
+    container_name: entrenasmart-frontend1
     restart: unless-stopped
 
     environment:
@@ -165,31 +167,6 @@ services:
 
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/misc/ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-    networks:
-      - entrenasmart-network
-
-  # ============================================================================
-  # Adminer - Herramienta universal de administración de BD
-  # ============================================================================
-  adminer:
-    image: adminer:latest
-    container_name: entrenasmart-adminer
-    restart: unless-stopped
-
-    ports:
-      - "8080:8080"
-
-    depends_on:
-      postgres:
-        condition: service_healthy
-
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/"]
       interval: 30s
       timeout: 10s
       retries: 3
