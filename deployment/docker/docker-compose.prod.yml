@@ -1,9 +1,10 @@
-# EntrenaSmart - Docker Compose
-# Configuración para deployment con Bot, API, Frontend y PostgreSQL
-#docker compose --project-name docentrena up -d
+# EntrenaSmart - Docker Compose (Producción)
+# Ejecutar con:
+# docker compose -f docker-compose.prod.yml --project-name entrenasmart-prod up -d
+
+name: entrenasmart-prod
 
 version: '3.8'
-
 
 services:
   # ============================================================================
@@ -11,7 +12,7 @@ services:
   # ============================================================================
   postgres:
     image: postgres:16-alpine
-    container_name: entrenasmart-db
+    container_name: entrenasmart-prod-db
     restart: unless-stopped
 
     environment:
@@ -22,10 +23,10 @@ services:
       PGTZ: America/Bogota
 
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_prod:/var/lib/postgresql/data
 
     ports:
-      - "5432:5432"
+      - "5432:5432"   # Puerto original
 
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U entrenasmart"]
@@ -34,7 +35,7 @@ services:
       retries: 5
 
     networks:
-      - entrenasmart-network
+      - entrenasmart-prod-network
 
   # ============================================================================
   # API Backend - FastAPI
@@ -43,7 +44,7 @@ services:
     build:
       context: ../..
       dockerfile: deployment/docker/Dockerfile.api
-    container_name: entrenasmart-api
+    container_name: entrenasmart-prod-api
     restart: unless-stopped
 
     env_file:
@@ -56,11 +57,11 @@ services:
       - TZ=America/Bogota
 
     ports:
-      - "8000:8000"
+      - "8000:8000"   # Puerto original
 
     volumes:
-      - ../../storage:/app/storage
-      - ../../logs:/app/logs
+      - storage_prod:/app/storage
+      - logs_prod:/app/logs
 
     depends_on:
       postgres:
@@ -74,7 +75,7 @@ services:
       start_period: 40s
 
     networks:
-      - entrenasmart-network
+      - entrenasmart-prod-network
 
   # ============================================================================
   # Frontend - React/Vite
@@ -85,14 +86,14 @@ services:
       dockerfile: ../deployment/docker/Dockerfile.frontend
       args:
         VITE_API_URL: http://localhost:8000
-    container_name: entrenasmart-frontend1
+    container_name: entrenasmart-prod-frontend
     restart: unless-stopped
 
     environment:
       - VITE_API_URL=http://api:8000
 
     ports:
-      - "5173:80"
+      - "5173:80"     # Puerto original
 
     depends_on:
       - api
@@ -105,7 +106,7 @@ services:
       start_period: 40s
 
     networks:
-      - entrenasmart-network
+      - entrenasmart-prod-network
 
   # ============================================================================
   # Bot de Telegram
@@ -114,7 +115,7 @@ services:
     build:
       context: ../..
       dockerfile: deployment/docker/Dockerfile.bot
-    container_name: entrenasmart-bot
+    container_name: entrenasmart-prod-bot
     restart: unless-stopped
 
     env_file:
@@ -127,8 +128,8 @@ services:
       - TZ=America/Bogota
 
     volumes:
-      - ../../storage:/app/storage
-      - ../../logs:/app/logs
+      - storage_prod:/app/storage
+      - logs_prod:/app/logs
 
     depends_on:
       postgres:
@@ -142,14 +143,14 @@ services:
       start_period: 40s
 
     networks:
-      - entrenasmart-network
+      - entrenasmart-prod-network
 
   # ============================================================================
-  # pgAdmin - Administración de PostgreSQL
+  # pgAdmin
   # ============================================================================
   pgadmin:
     image: dpage/pgadmin4:latest
-    container_name: entrenasmart-pgadmin
+    container_name: entrenasmart-prod-pgadmin
     restart: unless-stopped
 
     environment:
@@ -159,7 +160,7 @@ services:
       PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION: 'False'
 
     ports:
-      - "5050:80"
+      - "5050:80"     # Puerto original
 
     depends_on:
       postgres:
@@ -173,23 +174,22 @@ services:
       start_period: 40s
 
     networks:
-      - entrenasmart-network
+      - entrenasmart-prod-network
 
 # ============================================================================
-# Volúmenes persistentes
+# Volúmenes persistentes (PRODUCCIÓN)
 # ============================================================================
 volumes:
-  postgres_data:
+  postgres_data_prod:
     driver: local
-  storage:
+  storage_prod:
     driver: local
-  logs:
+  logs_prod:
     driver: local
 
 # ============================================================================
-# Red personalizada
+# Red de Producción
 # ============================================================================
 networks:
-  entrenasmart-network:
+  entrenasmart-prod-network:
     driver: bridge
-

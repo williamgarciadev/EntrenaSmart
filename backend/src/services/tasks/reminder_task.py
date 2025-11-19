@@ -53,8 +53,8 @@ class ReminderTask:
         Returns:
             bool: True si la tarea fue enviada, False si hubo error
         """
-        from src.models.base import get_db
-        from src.services.config_training_service import ConfigTrainingService
+        from backend.src.models.base import get_db
+        from backend.src.services.config_training_service import ConfigTrainingService
 
         logger.info(f"🔔 [SEND_REMINDER] ===== INICIANDO ENVÍO DE RECORDATORIO =====")
         logger.info(f"🔔 [SEND_REMINDER] Parámetros recibidos:")
